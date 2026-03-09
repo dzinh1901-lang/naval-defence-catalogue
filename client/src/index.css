@@ -1,3 +1,12 @@
+/*
+ * NAVAL & DEFENSE SYSTEMS INTELLIGENCE CATALOGUE
+ * Design Philosophy: Luxury Naval Intelligence — Refined Minimalism
+ * Movement: Scandinavian Luxury Product Design meets Military Intelligence
+ * Colors: Pure white bg, deep navy text, brushed steel accents, amber precision accent
+ * Typography: Cormorant Garamond (display) + Space Grotesk (UI) + JetBrains Mono (data)
+ * Layout: Full-bleed imagery, asymmetric editorial grids, generous whitespace
+ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -40,77 +49,57 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Naval custom colors */
+  --color-navy: var(--navy);
+  --color-navy-light: var(--navy-light);
+  --color-amber-gold: var(--amber-gold);
+  --color-steel: var(--steel);
+  --color-steel-light: var(--steel-light);
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
+  /* Naval Design System */
+  --navy: oklch(0.18 0.04 240);
+  --navy-light: oklch(0.25 0.04 240);
+  --amber-gold: oklch(0.68 0.14 65);
+  --steel: oklch(0.60 0.015 240);
+  --steel-light: oklch(0.82 0.008 240);
+
+  /* Base */
+  --radius: 0.25rem;
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.18 0.04 240);
+  --card: oklch(0.98 0.002 240);
+  --card-foreground: oklch(0.18 0.04 240);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
+  --popover-foreground: oklch(0.18 0.04 240);
+  --primary: oklch(0.18 0.04 240);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.003 240);
+  --secondary-foreground: oklch(0.30 0.04 240);
+  --muted: oklch(0.95 0.003 240);
+  --muted-foreground: oklch(0.52 0.02 240);
+  --accent: oklch(0.68 0.14 65);
+  --accent-foreground: oklch(0.99 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-}
-
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --border: oklch(0.90 0.005 240);
+  --input: oklch(0.90 0.005 240);
+  --ring: oklch(0.68 0.14 65);
+  --chart-1: oklch(0.18 0.04 240);
+  --chart-2: oklch(0.35 0.06 240);
+  --chart-3: oklch(0.52 0.08 240);
+  --chart-4: oklch(0.68 0.14 65);
+  --chart-5: oklch(0.60 0.015 240);
+  --sidebar: oklch(0.98 0.002 240);
+  --sidebar-foreground: oklch(0.18 0.04 240);
+  --sidebar-primary: oklch(0.18 0.04 240);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.003 240);
+  --sidebar-accent-foreground: oklch(0.18 0.04 240);
+  --sidebar-border: oklch(0.90 0.005 240);
+  --sidebar-ring: oklch(0.68 0.14 65);
 }
 
 @layer base {
@@ -119,6 +108,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -131,27 +123,24 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+  
+  h1, h2, h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  
+  code, pre, .spec-data {
+    font-family: 'JetBrains Mono', monospace;
+  }
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +151,276 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
+  }
+  
+  /* Naval Design Utilities */
+  .font-display {
+    font-family: 'Cormorant Garamond', serif;
+  }
+  
+  .font-ui {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  
+  .font-mono-data {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .amber-rule {
+    height: 1px;
+    background: oklch(0.68 0.14 65);
+    width: 100%;
+  }
+  
+  .amber-rule-short {
+    height: 1px;
+    background: oklch(0.68 0.14 65);
+    width: 3rem;
+  }
+  
+  .classification-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: oklch(0.68 0.14 65);
+  }
+  
+  .nav-link {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: oklch(0.40 0.02 240);
+    transition: color 0.2s ease;
+  }
+  
+  .nav-link:hover {
+    color: oklch(0.18 0.04 240);
+  }
+  
+  .nav-link.active {
+    color: oklch(0.68 0.14 65);
+  }
+  
+  .spec-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid oklch(0.93 0.003 240);
+  }
+  
+  .spec-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(0.52 0.02 240);
+    font-weight: 500;
+  }
+  
+  .spec-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    color: oklch(0.18 0.04 240);
+    font-weight: 500;
+  }
+  
+  .system-card {
+    background: oklch(0.99 0 0);
+    border: 1px solid oklch(0.90 0.005 240);
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .system-card:hover {
+    border-color: oklch(0.68 0.14 65);
+    box-shadow: 0 8px 40px oklch(0.18 0.04 240 / 0.08);
+    transform: translateY(-2px);
+  }
+  
+  .hero-overlay {
+    background: linear-gradient(
+      to bottom,
+      oklch(0.18 0.04 240 / 0.3) 0%,
+      oklch(0.18 0.04 240 / 0.6) 50%,
+      oklch(0.18 0.04 240 / 0.85) 100%
+    );
+  }
+  
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.2em;
+    color: oklch(0.68 0.14 65);
+    font-weight: 500;
+  }
+  
+  /* Radar animation */
+  @keyframes radar-sweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  .radar-sweep {
+    animation: radar-sweep 3s linear infinite;
+    transform-origin: center;
+  }
+  
+  @keyframes radar-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 0.8; transform: scale(1.2); }
+  }
+  
+  .radar-pulse {
+    animation: radar-pulse 2s ease-in-out infinite;
+  }
+  
+  /* Fade in on scroll */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  /* Scan line effect */
+  @keyframes scanline {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  .scan-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, oklch(0.68 0.14 65 / 0.15) 50%, transparent 100%);
+    animation: scanline 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  /* Smooth tab transitions */
+  .tab-content-enter {
+    animation: fadeInUp 0.4s ease-out forwards;
+  }
+  
+  /* Mobile bottom nav */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: oklch(0.99 0 0 / 0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid oklch(0.90 0.005 240);
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.82 0.008 240);
+    border-radius: 2px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.60 0.015 240);
+  }
+  
+  /* AI chat bubble */
+  .chat-bubble-user {
+    background: oklch(0.18 0.04 240);
+    color: oklch(0.99 0 0);
+    border-radius: 1rem 1rem 0.25rem 1rem;
+  }
+  
+  .chat-bubble-ai {
+    background: oklch(0.96 0.003 240);
+    color: oklch(0.18 0.04 240);
+    border-radius: 1rem 1rem 1rem 0.25rem;
+    border: 1px solid oklch(0.90 0.005 240);
+  }
+  
+  /* Progress bar */
+  .spec-bar {
+    height: 2px;
+    background: oklch(0.90 0.005 240);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .spec-bar-fill {
+    height: 100%;
+    background: oklch(0.68 0.14 65);
+    transition: width 1s ease-out;
+  }
+  
+  /* Visualization canvas */
+  .viz-container {
+    background: oklch(0.08 0.03 240);
+    border: 1px solid oklch(0.90 0.005 240);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Tag badge */
+  .system-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid oklch(0.90 0.005 240);
+    color: oklch(0.52 0.02 240);
+  }
+  
+  .system-tag.amber {
+    border-color: oklch(0.68 0.14 65 / 0.4);
+    color: oklch(0.68 0.14 65);
+    background: oklch(0.68 0.14 65 / 0.06);
+  }
+  
+  /* Horizontal scroll catalogue */
+  .catalogue-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .catalogue-scroll::-webkit-scrollbar {
+    display: none;
   }
 }
