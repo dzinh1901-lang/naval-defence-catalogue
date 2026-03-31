@@ -1,0 +1,22 @@
+{
+  "name": "@naval/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Naval Digital Twin Platform — background worker for simulation jobs and async processing",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "@naval/config": "workspace:*",
+    "@types/node": "^20.17.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.1",
+    "typescript": "5.6.3"
+  }
+}

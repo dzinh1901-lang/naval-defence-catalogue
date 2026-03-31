@@ -1,22 +1,92 @@
+# Naval Digital Twin Platform — Local Development Docker Compose
+# ──────────────────────────────────────────────────────────────
+# Usage:
+#   docker compose up                  (full stack)
+#   docker compose up db               (database only)
+#   docker compose up db api           (database + API)
+#   docker compose logs -f api         (follow API logs)
+#
+# Development note: api/web/worker run with volume mounts so that
+# source changes trigger hot-reload via nest --watch / next dev.
+# ──────────────────────────────────────────────────────────────
+
 version: '3.9'
 
 services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────
   db:
-    image: postgres:15
-    restart: always
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: naval
+      POSTGRES_USER: naval
+      POSTGRES_PASSWORD: naval_dev
+      POSTGRES_DB: naval_dt
     ports:
       - "5432:5432"
-
-  api:
-    build: ./apps/api
-    command: pnpm start:dev
     volumes:
-      - .:/app
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U naval -d naval_dt"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── NestJS API ────────────────────────────────────────────────
+  # Uses source volume mounts for hot-reload via `nest start --watch`
+  api:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm --filter @naval/api start:dev"
+    environment:
+      DATABASE_URL: postgresql://naval:naval_dev@db:5432/naval_dt
+      PORT: 4000
+      NODE_ENV: development
     ports:
       - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Next.js Web ───────────────────────────────────────────────
+  # Uses source volume mounts for hot-reload via `next dev`
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm --filter @naval/web dev"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/web/.next
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ── Worker ────────────────────────────────────────────────────
+  # Uses source volume mounts for hot-reload via `tsx watch`
+  worker:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "corepack enable && pnpm --filter @naval/worker dev"
+    environment:
+      DATABASE_URL: postgresql://naval:naval_dev@db:5432/naval_dt
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:

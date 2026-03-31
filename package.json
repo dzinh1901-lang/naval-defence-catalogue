@@ -1,15 +1,24 @@
 {
   "name": "naval-defence-catalogue",
   "version": "1.0.0",
-  "type": "module",
+  "private": true,
   "license": "MIT",
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "NODE_ENV=production node dist/index.js",
-    "preview": "vite preview --host",
-    "check": "tsc --noEmit",
-    "format": "prettier --write ."
+    "dev": "pnpm --filter @naval/api start:dev & pnpm --filter @naval/web dev",
+    "dev:web": "pnpm --filter @naval/web dev",
+    "dev:api": "pnpm --filter @naval/api start:dev",
+    "dev:worker": "pnpm --filter @naval/worker dev",
+    "dev:legacy": "vite --host",
+    "build": "pnpm -r --filter './apps/*' --filter './packages/*' build",
+    "build:web": "pnpm --filter @naval/web build",
+    "build:api": "pnpm --filter @naval/api build",
+    "typecheck": "pnpm -r --filter './apps/*' --filter './packages/*' typecheck",
+    "db:generate": "pnpm --filter @naval/database db:generate",
+    "db:migrate": "pnpm --filter @naval/database db:migrate",
+    "db:seed": "pnpm --filter @naval/database db:seed",
+    "db:studio": "pnpm --filter @naval/database db:studio",
+    "format": "prettier --write .",
+    "lint": "pnpm -r --filter './apps/*' lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
