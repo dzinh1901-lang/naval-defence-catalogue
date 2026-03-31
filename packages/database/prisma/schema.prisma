@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  users     User[]
+  projects  Project[]
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  roles          Role[]
+}
+
+model Role {
+  id   String @id @default(uuid())
+  name String
+}
+
+model Project {
+  id              String   @id @default(uuid())
+  name            String
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  twins           DigitalTwin[]
+  requirements    Requirement[]
+}
+
+model DigitalTwin {
+  id         String   @id @default(uuid())
+  name       String
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  subsystems Subsystem[]
+  variants   Variant[]
+}
+
+model Subsystem {
+  id        String   @id @default(uuid())
+  name      String
+  twinId    String
+  twin      DigitalTwin @relation(fields: [twinId], references: [id])
+  interfaces Interface[]
+}
+
+model Interface {
+  id          String @id @default(uuid())
+  name        String
+  subsystemId String
+  subsystem   Subsystem @relation(fields: [subsystemId], references: [id])
+}
+
+model Requirement {
+  id        String   @id @default(uuid())
+  text      String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+}
+
+model Simulation {
+  id         String   @id @default(uuid())
+  name       String
+  twinId     String
+  twin       DigitalTwin @relation(fields: [twinId], references: [id])
+  status     String
+}
+
+model Variant {
+  id      String   @id @default(uuid())
+  name    String
+  twinId  String
+  twin    DigitalTwin @relation(fields: [twinId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  title     String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+}
+
+model Evidence {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review @relation(fields: [reviewId], references: [id])
+  uri       String
+}
