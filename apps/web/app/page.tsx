@@ -27,7 +27,7 @@ export default async function HomePage() {
           Digital Twin Platform
         </span>
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-text-muted text-xs">v0.3.0-m3</span>
+          <span className="text-text-muted text-xs">v1.0.0-m6</span>
           <div className="h-6 w-px bg-border-subtle" />
           <div className="h-7 w-7 rounded-full bg-accent-muted border border-accent/30 flex items-center justify-center text-xs font-medium text-accent">
             SL
@@ -79,7 +79,7 @@ export default async function HomePage() {
       </main>
 
       <footer className="h-8 flex items-center px-6 border-t border-border-subtle text-2xs text-text-muted font-mono">
-        Naval Systems Command · Naval Digital Twin Platform · Milestone 3
+        Naval Systems Command · Naval Digital Twin Platform · Milestone 6
       </footer>
     </div>
   );

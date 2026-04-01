@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: naval-dt-staging
+
+namePrefix: staging-
+
+resources:
+  - ../../base
+
+# Override the namespace label on the Namespace resource itself
+patches:
+  - target:
+      kind: Namespace
+      name: naval-dt
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: naval-dt-staging
+
+  # Staging: single replica for API and Web (cost-effective)
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+  - target:
+      kind: Deployment
+      name: web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+
+  # Staging: smaller PVC
+  - target:
+      kind: PersistentVolumeClaim
+      name: postgres-data
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 5Gi
+
+  # Staging: update ingress host
+  - target:
+      kind: Ingress
+      name: naval-dt-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.naval-dt.example.com
+
+images:
+  - name: ghcr.io/dzinh1901-lang/naval-defence-catalogue/api
+    newTag: staging
+  - name: ghcr.io/dzinh1901-lang/naval-defence-catalogue/web
+    newTag: staging
+  - name: ghcr.io/dzinh1901-lang/naval-defence-catalogue/worker
+    newTag: staging

@@ -1,0 +1,96 @@
+name: Deploy — Staging
+
+on:
+  workflow_run:
+    workflows: ["Docker Build & Push"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy (default: main)"
+        required: false
+        default: main
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+    environment:
+      name: staging
+      url: https://staging.naval-dt.example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Set up kustomize
+        uses: imranismail/setup-kustomize@v2
+        with:
+          kustomize-version: "5.4.1"
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update image tags in kustomization
+        run: |
+          cd k8s/overlays/staging
+          # Patch image tags to the resolved tag
+          kustomize edit set image \
+            ghcr.io/dzinh1901-lang/naval-defence-catalogue/api:${{ steps.tag.outputs.tag }} \
+            ghcr.io/dzinh1901-lang/naval-defence-catalogue/web:${{ steps.tag.outputs.tag }} \
+            ghcr.io/dzinh1901-lang/naval-defence-catalogue/worker:${{ steps.tag.outputs.tag }}
+
+      - name: Apply Kubernetes manifests (staging)
+        run: kubectl apply -k k8s/overlays/staging
+
+      - name: Apply secrets from GitHub Secrets
+        run: |
+          kubectl create secret generic naval-dt-secrets \
+            --namespace=naval-dt-staging \
+            --from-literal=DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" \
+            --from-literal=JWT_SECRET="${{ secrets.STAGING_JWT_SECRET }}" \
+            --from-literal=POSTGRES_PASSWORD="${{ secrets.STAGING_POSTGRES_PASSWORD }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Wait for rollout — API
+        run: kubectl rollout status deployment/staging-api -n naval-dt-staging --timeout=300s
+
+      - name: Wait for rollout — Web
+        run: kubectl rollout status deployment/staging-web -n naval-dt-staging --timeout=300s
+
+      - name: Wait for rollout — Worker
+        run: kubectl rollout status deployment/staging-worker -n naval-dt-staging --timeout=300s
+
+      - name: Smoke test staging API health
+        run: |
+          sleep 10
+          kubectl run smoke-test \
+            --namespace=naval-dt-staging \
+            --image=curlimages/curl:8 \
+            --restart=Never \
+            --rm -i \
+            -- curl -sf http://staging-api:4000/api/v1/health
