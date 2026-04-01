@@ -10,13 +10,11 @@
 # source changes trigger hot-reload via nest --watch / next dev.
 # ──────────────────────────────────────────────────────────────
 
-version: '3.9'
-
 services:
 
   # ── PostgreSQL ─────────────────────────────────────────────────
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: naval

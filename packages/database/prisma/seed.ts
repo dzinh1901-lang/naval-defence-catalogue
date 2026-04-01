@@ -21,6 +21,7 @@ async function main() {
     where: { slug: 'naval-systems-command' },
     update: {},
     create: {
+      id: 'dev-org',
       name: 'Naval Systems Command',
       slug: 'naval-systems-command',
       plan: 'PROFESSIONAL',
@@ -35,6 +36,7 @@ async function main() {
     where: { email: 'cmdr.lee@naval-systems.dev' },
     update: {},
     create: {
+      id: 'dev-user-admin',
       email: 'cmdr.lee@naval-systems.dev',
       name: 'Commander S. Lee',
       passwordHash: null, // placeholder — JWT/OAuth to be implemented in M2
@@ -45,6 +47,7 @@ async function main() {
     where: { email: 'eng.chen@naval-systems.dev' },
     update: {},
     create: {
+      id: 'dev-user-member',
       email: 'eng.chen@naval-systems.dev',
       name: 'Dr. M. Chen',
       passwordHash: null,
@@ -55,6 +58,7 @@ async function main() {
     where: { email: 'analyst.kowalski@naval-systems.dev' },
     update: {},
     create: {
+      id: 'dev-user-viewer',
       email: 'analyst.kowalski@naval-systems.dev',
       name: 'P. Kowalski',
       passwordHash: null,

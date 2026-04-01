@@ -6,7 +6,7 @@
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "build": "nest build",
+    "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -126,6 +126,8 @@ jobs:
     name: Prisma schema
     runs-on: ubuntu-latest
     needs: install
+    env:
+      DATABASE_URL: postgresql://naval:naval_dev@localhost:5432/naval_dt
     steps:
       - uses: actions/checkout@v4
 

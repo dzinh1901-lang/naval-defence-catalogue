@@ -37,13 +37,23 @@ function getApiBase(): string {
   return base.replace(/\/$/, '');
 }
 
+function getApiAuthToken(): string | undefined {
+  return (
+    process.env['API_AUTH_TOKEN'] ??
+    process.env['NEXT_PUBLIC_API_AUTH_TOKEN'] ??
+    (process.env['NODE_ENV'] === 'production' ? undefined : 'dev-token')
+  );
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getApiBase()}/api/v1${path}`;
+  const token = getApiAuthToken();
 
   const res = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
     // Next.js cache: revalidate every 30 s by default.
@@ -217,7 +227,6 @@ export async function updateWorkspaceViewConfig(
 ): Promise<WorkspaceViewConfig> {
   return apiFetch<WorkspaceViewConfig>(`/workspace/${twinId}/view-config`, {
     method: 'PATCH',
-    headers: { Authorization: 'Bearer dev-token' },
     body: JSON.stringify(dto),
     // Disable Next.js cache for mutations.
     cache: 'no-store',

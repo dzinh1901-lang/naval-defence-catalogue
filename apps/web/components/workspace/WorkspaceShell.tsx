@@ -76,12 +76,15 @@ export function WorkspaceShell({
         const apiBase =
           process.env['NEXT_PUBLIC_API_URL'] ??
           'http://localhost:4000';
+        const apiToken =
+          process.env['NEXT_PUBLIC_API_AUTH_TOKEN'] ??
+          (process.env['NODE_ENV'] === 'production' ? undefined : 'dev-token');
 
         await fetch(`${apiBase}/api/v1/workspace/${twinId}/view-config`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer dev-token',
+            ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {}),
           },
           body: JSON.stringify(patch),
         });

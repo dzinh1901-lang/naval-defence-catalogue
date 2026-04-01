@@ -6,6 +6,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY patches/ ./patches/
 COPY packages/config/package.json ./packages/config/
 COPY packages/database/package.json ./packages/database/
 COPY apps/worker/package.json ./apps/worker/
@@ -28,14 +29,7 @@ ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/config/package.json ./packages/config/
-COPY packages/database/package.json ./packages/database/
-COPY apps/worker/package.json ./apps/worker/
-
-RUN pnpm install --frozen-lockfile --prod
-
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 CMD ["node", "apps/worker/dist/index.js"]

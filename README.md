@@ -51,6 +51,7 @@ pnpm install
 ```bash
 cp .env.example .env
 # Edit .env if needed -- defaults point to the Docker Compose database
+# and include the local development bearer token for seeded sample data
 ```
 
 ### 3. Start the database
