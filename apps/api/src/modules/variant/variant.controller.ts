@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/commo
 import { VariantService } from './variant.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('variants')
 export class VariantController {
@@ -9,9 +10,10 @@ export class VariantController {
 
   /**
    * POST /api/v1/variants
-   * Create a new variant for a digital twin.
+   * Create a new variant for a digital twin. Requires MEMBER or ADMIN role.
    */
   @Post()
+  @Roles('MEMBER', 'ADMIN')
   create(@Body() dto: CreateVariantDto) {
     return this.service.create(dto);
   }
@@ -36,18 +38,20 @@ export class VariantController {
 
   /**
    * PATCH /api/v1/variants/:id
-   * Update a variant.
+   * Update a variant. Requires MEMBER or ADMIN role.
    */
   @Patch(':id')
+  @Roles('MEMBER', 'ADMIN')
   update(@Param('id') id: string, @Body() dto: UpdateVariantDto) {
     return this.service.update(id, dto);
   }
 
   /**
    * DELETE /api/v1/variants/:id
-   * Delete a variant.
+   * Delete a variant. Requires ADMIN role.
    */
   @Delete(':id')
+  @Roles('ADMIN')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

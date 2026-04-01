@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { SubsystemService } from './subsystem.service';
 import { CreateSubsystemDto, UpdateSubsystemDto } from './dto/subsystem.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('subsystems')
 export class SubsystemController {
@@ -30,18 +31,21 @@ export class SubsystemController {
 
   @Post()
   @Version('1')
+  @Roles('MEMBER', 'ADMIN')
   create(@Body() dto: CreateSubsystemDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
   @Version('1')
+  @Roles('MEMBER', 'ADMIN')
   update(@Param('id') id: string, @Body() dto: UpdateSubsystemDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
   @Version('1')
+  @Roles('ADMIN')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

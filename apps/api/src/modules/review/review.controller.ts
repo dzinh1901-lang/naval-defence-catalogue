@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('reviews')
 export class ReviewController {
@@ -9,9 +10,10 @@ export class ReviewController {
 
   /**
    * POST /api/v1/reviews
-   * Create a new review for a project.
+   * Create a new review for a project. Requires MEMBER or ADMIN role.
    */
   @Post()
+  @Roles('MEMBER', 'ADMIN')
   create(@Body() dto: CreateReviewDto) {
     return this.service.create(dto);
   }
@@ -36,9 +38,10 @@ export class ReviewController {
 
   /**
    * PATCH /api/v1/reviews/:id
-   * Update review status.
+   * Update review status. Requires MEMBER or ADMIN role.
    */
   @Patch(':id')
+  @Roles('MEMBER', 'ADMIN')
   update(@Param('id') id: string, @Body() dto: UpdateReviewDto) {
     return this.service.update(id, dto);
   }

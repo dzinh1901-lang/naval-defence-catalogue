@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { RequirementService } from './requirement.service';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('requirements')
 export class RequirementController {
@@ -7,8 +8,10 @@ export class RequirementController {
 
   /**
    * POST /api/v1/requirements
+   * Create a requirement. Requires MEMBER or ADMIN role.
    */
   @Post()
+  @Roles('MEMBER', 'ADMIN')
   create(@Body() body: { identifier: string; text: string; projectId: string }) {
     return this.service.create(body);
   }
