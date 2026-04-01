@@ -3,13 +3,19 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class RequirementService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { text: string; projectId: string }) {
+  create(data: { identifier: string; text: string; projectId: string }) {
     return this.prisma.requirement.create({ data });
   }
 
-  findByProject(projectId: string) {
-    return this.prisma.requirement.findMany({ where: { projectId } });
+  findByProject(projectId: string, subsystemId?: string) {
+    return this.prisma.requirement.findMany({
+      where: {
+        projectId,
+        ...(subsystemId !== undefined ? { subsystemId: subsystemId || null } : {}),
+      },
+      orderBy: [{ identifier: 'asc' }],
+    });
   }
 }

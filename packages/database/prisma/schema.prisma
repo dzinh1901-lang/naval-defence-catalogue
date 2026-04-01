@@ -128,9 +128,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  memberships OrganizationMember[]
-  auditEvents AuditEvent[]
-  reviews     Review[]
+  memberships        OrganizationMember[]
+  projectMemberships ProjectMember[]
+  auditEvents        AuditEvent[]
+  reviews            Review[]
+  simulationRuns     SimulationRun[]
 
   @@index([email])
 }
@@ -166,10 +168,30 @@ model Project {
   twins        DigitalTwin[]
   requirements Requirement[]
   reviews      Review[]
+  members      ProjectMember[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([status])
+}
+
+// ── Project Membership ─────────────────────────────────────────────────────
+// Project-level access grants complement coarse org-level roles.
+// An engineer may be a VIEWER at org level but a MEMBER on a specific project.
+
+model ProjectMember {
+  id        String     @id @default(cuid())
+  projectId String
+  userId    String
+  role      MemberRole @default(VIEWER)
+  joinedAt  DateTime   @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
 }
 
 // ── Digital Twins ──────────────────────────────────────────────────────────
@@ -261,13 +283,14 @@ model Requirement {
 // ── Variants ──────────────────────────────────────────────────────────────
 
 model Variant {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  isBaseline  Boolean  @default(false)
-  twinId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  isBaseline    Boolean  @default(false)
+  configuration Json     @default("{}")
+  twinId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   twin DigitalTwin @relation(fields: [twinId], references: [id], onDelete: Cascade)
 
@@ -293,20 +316,23 @@ model Simulation {
 }
 
 model SimulationRun {
-  id           String       @id @default(cuid())
-  status       SimRunStatus @default(PENDING)
-  startedAt    DateTime?
-  completedAt  DateTime?
-  result       Json?
-  errorMessage String?
-  simulationId String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  status         SimRunStatus @default(PENDING)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  result         Json?
+  errorMessage   String?
+  simulationId   String
+  requestedById  String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  simulation   Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  requestedBy  User?      @relation(fields: [requestedById], references: [id])
 
   @@index([simulationId])
   @@index([status])
+  @@index([requestedById])
 }
 
 // ── Reviews ───────────────────────────────────────────────────────────────

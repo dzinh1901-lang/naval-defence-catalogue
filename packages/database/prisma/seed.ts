@@ -111,6 +111,30 @@ async function main() {
 
   console.log(`  ✔ Projects: ${frigateProject.name}, ${subProject.name}`);
 
+  // ── Project Memberships ───────────────────────────────────────────────────
+  // Project-level grants complement org-level roles.
+  // adminUser is ADMIN at org level → implicitly has access; explicit ADMIN grant here.
+  // engineerUser is MEMBER at org level → MEMBER on the frigate project.
+  // analystUser is VIEWER at org level → VIEWER on the frigate project.
+
+  await prisma.projectMember.upsert({
+    where: { projectId_userId: { projectId: frigateProject.id, userId: adminUser.id } },
+    update: {},
+    create: { projectId: frigateProject.id, userId: adminUser.id, role: 'ADMIN' },
+  });
+  await prisma.projectMember.upsert({
+    where: { projectId_userId: { projectId: frigateProject.id, userId: engineerUser.id } },
+    update: {},
+    create: { projectId: frigateProject.id, userId: engineerUser.id, role: 'MEMBER' },
+  });
+  await prisma.projectMember.upsert({
+    where: { projectId_userId: { projectId: frigateProject.id, userId: analystUser.id } },
+    update: {},
+    create: { projectId: frigateProject.id, userId: analystUser.id, role: 'VIEWER' },
+  });
+
+  console.log(`  ✔ ProjectMembers: 3 members on ${frigateProject.name}`);
+
   // ── Digital Twin ──────────────────────────────────────────────────────────
 
   const frigateTwin = await prisma.digitalTwin.upsert({
@@ -358,18 +382,39 @@ async function main() {
         description: 'Area air warfare configuration — standard production fit.',
         isBaseline: true,
         twinId: frigateTwin.id,
+        configuration: {
+          radarMode: 'VOLUME_SEARCH',
+          missileLoadout: 'SYLVER-48',
+          ewSuite: 'STANDARD',
+          asw: false,
+        },
       },
       {
         name: 'ASW Enhanced',
         description: 'Anti-submarine warfare enhanced fit with towed array and VDS.',
         isBaseline: false,
         twinId: frigateTwin.id,
+        configuration: {
+          radarMode: 'HORIZON_SEARCH',
+          missileLoadout: 'SYLVER-32',
+          ewSuite: 'STANDARD',
+          asw: true,
+          towedArray: 'CAPTAS-4',
+          vds: 'FLASH',
+        },
       },
       {
         name: 'Export Variant A',
         description: 'Reduced-capability export configuration for partner nation FMS.',
         isBaseline: false,
         twinId: frigateTwin.id,
+        configuration: {
+          radarMode: 'VOLUME_SEARCH',
+          missileLoadout: 'SYLVER-32',
+          ewSuite: 'REDUCED',
+          asw: false,
+          exportRestricted: true,
+        },
       },
     ],
   });
@@ -404,6 +449,7 @@ async function main() {
         convergence: true,
       },
       simulationId: propSim.id,
+      requestedById: engineerUser.id,
     },
   });
 

@@ -3,10 +3,10 @@ import { EvidenceService } from './evidence.service';
 
 @Controller('evidence')
 export class EvidenceController {
-  constructor(private service: EvidenceService) {}
+  constructor(private readonly service: EvidenceService) {}
 
   @Post()
-  create(@Body() body: { reviewId: string; uri: string }) {
+  create(@Body() body: { title: string; reviewId: string; uri: string }) {
     return this.service.create(body);
   }
 

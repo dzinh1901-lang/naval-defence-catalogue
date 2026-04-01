@@ -1,17 +1,37 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
 import { TwinService } from './twin.service';
+import { CreateTwinDto } from './dto/create-twin.dto';
 
 @Controller('twins')
 export class TwinController {
-  constructor(private service: TwinService) {}
+  constructor(private readonly service: TwinService) {}
 
+  /**
+   * POST /api/v1/twins
+   * Create a new digital twin.
+   */
   @Post()
-  create(@Body() body: { name: string; projectId: string }) {
-    return this.service.create(body);
+  create(@Body() dto: CreateTwinDto) {
+    return this.service.create(dto);
   }
 
+  /**
+   * GET /api/v1/twins/project/:projectId
+   * List all digital twins for a project.
+   */
   @Get('project/:projectId')
   findByProject(@Param('projectId') projectId: string) {
     return this.service.findByProject(projectId);
+  }
+
+  /**
+   * GET /api/v1/twins/:id
+   * Get a single digital twin by ID with subsystems, variants, and simulations.
+   */
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const twin = await this.service.findOne(id);
+    if (!twin) throw new NotFoundException(`DigitalTwin ${id} not found`);
+    return twin;
   }
 }

@@ -1,0 +1,134 @@
+/**
+ * Naval DTP — Server-side API client
+ *
+ * Used exclusively in Next.js server components and route handlers.
+ * All fetch calls go directly to the NestJS API from the server;
+ * no credentials or internal URLs are ever exposed to the browser.
+ *
+ * The API_URL env var should be set to the internal address of the API
+ * (e.g. http://localhost:4000 locally, or the internal service URL in prod).
+ */
+
+import type {
+  Project,
+  DigitalTwin,
+  Subsystem,
+  Requirement,
+} from '@naval/domain';
+
+// ── Base config ──────────────────────────────────────────────────────────────
+
+function getApiBase(): string {
+  const base = process.env['API_URL'] ?? process.env['NEXT_PUBLIC_API_URL'];
+  if (!base) {
+    throw new Error(
+      'API_URL is not configured. Set API_URL (server-side) in your environment.',
+    );
+  }
+  return base.replace(/\/$/, '');
+}
+
+async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const url = `${getApiBase()}/api/v1${path}`;
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    // Next.js cache: revalidate every 30 s by default.
+    // Individual callers can override via next: { revalidate: ... } or cache: 'no-store'.
+    next: { revalidate: 30 },
+    ...options,
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new ApiClientError(res.status, path, body);
+  }
+
+  return res.json() as Promise<T>;
+}
+
+export class ApiClientError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly path: string,
+    public readonly body: string,
+  ) {
+    super(`API ${status} at ${path}: ${body}`);
+    this.name = 'ApiClientError';
+  }
+}
+
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+/** List all projects, optionally filtered. */
+export async function listProjects(opts?: {
+  organizationId?: string;
+  status?: string;
+}): Promise<Project[]> {
+  const params = new URLSearchParams();
+  if (opts?.organizationId) params.set('organizationId', opts.organizationId);
+  if (opts?.status) params.set('status', opts.status);
+  const qs = params.toString() ? `?${params}` : '';
+  return apiFetch<Project[]>(`/projects${qs}`);
+}
+
+/** Get a single project by ID (includes twins list). */
+export async function getProject(id: string): Promise<Project | null> {
+  try {
+    return await apiFetch<Project>(`/projects/${id}`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+// ── Digital Twins ─────────────────────────────────────────────────────────────
+
+/** List digital twins for a project. */
+export async function listTwins(projectId: string): Promise<DigitalTwin[]> {
+  return apiFetch<DigitalTwin[]>(`/twins/project/${projectId}`);
+}
+
+/** Get a single digital twin by ID (includes subsystem tree, variants, simulations). */
+export async function getTwin(id: string): Promise<DigitalTwin | null> {
+  try {
+    return await apiFetch<DigitalTwin>(`/twins/${id}`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+// ── Subsystems ────────────────────────────────────────────────────────────────
+
+/** List subsystems for a digital twin. */
+export async function listSubsystems(twinId: string): Promise<Subsystem[]> {
+  return apiFetch<Subsystem[]>(`/subsystems?twinId=${twinId}`);
+}
+
+/** Get a single subsystem by ID (includes children, interfaces, requirements). */
+export async function getSubsystem(id: string): Promise<Subsystem | null> {
+  try {
+    return await apiFetch<Subsystem>(`/subsystems/${id}`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+// ── Requirements ──────────────────────────────────────────────────────────────
+
+/** List requirements for a project. */
+export async function listRequirements(
+  projectId: string,
+  opts?: { subsystemId?: string },
+): Promise<Requirement[]> {
+  const params = new URLSearchParams();
+  if (opts?.subsystemId !== undefined) params.set('subsystemId', opts.subsystemId);
+  const qs = params.toString() ? `?${params}` : '';
+  return apiFetch<Requirement[]>(`/requirements/project/${projectId}${qs}`);
+}

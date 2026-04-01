@@ -135,6 +135,19 @@ export interface Project extends BaseEntity {
   organizationId: string;
   organization?: Organization;
   twins?: DigitalTwin[];
+  members?: ProjectMember[];
+}
+
+// ── Project Membership ─────────────────────────────────────────
+// Project-level access grant. Complements coarse org-level roles.
+
+export interface ProjectMember extends BaseEntity {
+  projectId: string;
+  userId: string;
+  role: MemberRole;
+  joinedAt: string;
+  user?: User;
+  project?: Project;
 }
 
 // ── Digital Twins ──────────────────────────────────────────────
@@ -148,6 +161,7 @@ export interface DigitalTwin extends BaseEntity {
   project?: Project;
   subsystems?: Subsystem[];
   variants?: Variant[];
+  simulations?: Simulation[];
 }
 
 // ── Subsystems ─────────────────────────────────────────────────
@@ -193,6 +207,7 @@ export interface Variant extends BaseEntity {
   name: string;
   description?: string | null;
   isBaseline: boolean;
+  configuration: Record<string, unknown>;
   twinId: string;
 }
 
@@ -214,6 +229,8 @@ export interface SimulationRun extends BaseEntity {
   result?: Record<string, unknown> | null;
   errorMessage?: string | null;
   simulationId: string;
+  requestedById?: string | null;
+  requestedBy?: User | null;
 }
 
 // ── Reviews & Evidence ─────────────────────────────────────────

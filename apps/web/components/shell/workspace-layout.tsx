@@ -4,13 +4,15 @@ import React, { useState } from 'react';
 import { TopBar } from './top-bar';
 import { LeftExplorer } from './left-explorer';
 import { BottomPanel } from './bottom-panel';
-import { MOCK_PROJECTS } from '@/lib/mock-data';
+import type { Project } from '@naval/domain';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
+  /** Projects to display in the left explorer — fetched server-side. */
+  projects: Project[];
 }
 
-export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
+export function WorkspaceLayout({ children, projects }: WorkspaceLayoutProps) {
   const [explorerOpen, setExplorerOpen] = useState(true);
 
   return (
@@ -25,7 +27,7 @@ export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* Left explorer */}
         {explorerOpen && (
-          <LeftExplorer projects={MOCK_PROJECTS} />
+          <LeftExplorer projects={projects} />
         )}
 
         {/* Center + bottom column */}

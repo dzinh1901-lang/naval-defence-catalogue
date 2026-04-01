@@ -27,7 +27,7 @@ docs/
   architecture/  System design and migration documentation
 
 .github/
-  workflows/  GitHub Actions CI (install → typecheck → build → Prisma validate)
+  workflows/  GitHub Actions CI (install -> typecheck -> build -> Prisma validate)
 ```
 
 ---
@@ -50,7 +50,7 @@ pnpm install
 
 ```bash
 cp .env.example .env
-# Edit .env if needed — defaults point to the Docker Compose database
+# Edit .env if needed -- defaults point to the Docker Compose database
 ```
 
 ### 3. Start the database
@@ -69,7 +69,7 @@ pnpm db:seed         # Seed with realistic naval domain sample data
 ### 5. Start the platform
 
 ```bash
-# Start API + Web concurrently
+# Start API + Web concurrently (uses concurrently -- portable, no shell backgrounding)
 pnpm dev
 
 # Or start individually
@@ -125,19 +125,26 @@ pnpm format         # Prettier format everything
 All API routes are versioned under `/api/v1/`:
 
 ```
-GET  /api/v1/health               Service health check
-GET  /api/v1/projects             List projects
-POST /api/v1/projects             Create project
-GET  /api/v1/projects/:id         Get project
-GET  /api/v1/twins/project/:id    List twins for a project
-POST /api/v1/twins                Create twin
-GET  /api/v1/subsystems?twinId=   List subsystems for a twin (with tree)
-GET  /api/v1/subsystems/:id       Get subsystem with requirements/interfaces
-POST /api/v1/subsystems           Create subsystem
-GET  /api/v1/requirements/project/:id  List requirements for a project
-POST /api/v1/requirements         Create requirement
-GET  /api/v1/reviews/project/:id  List reviews
-POST /api/v1/reviews              Create review
+GET  /api/v1/health                    Service health check
+GET  /api/v1/auth/me                   Get current user (requires auth token)
+GET  /api/v1/auth/whoami               Guest identity check (public)
+GET  /api/v1/projects                  List projects (optional ?organizationId= ?status=)
+POST /api/v1/projects                  Create project
+GET  /api/v1/projects/:id              Get project with twins
+GET  /api/v1/twins/project/:id         List twins for a project (with subsystems, variants)
+POST /api/v1/twins                     Create twin
+GET  /api/v1/twins/:id                 Get twin with full detail (subsystems, variants, simulations)
+GET  /api/v1/subsystems?twinId=        List subsystems for a twin (with tree)
+GET  /api/v1/subsystems/:id            Get subsystem with requirements/interfaces
+POST /api/v1/subsystems                Create subsystem
+PATCH /api/v1/subsystems/:id           Update subsystem
+DELETE /api/v1/subsystems/:id          Delete subsystem
+GET  /api/v1/requirements/project/:id  List requirements for a project (optional ?subsystemId=)
+POST /api/v1/requirements              Create requirement
+GET  /api/v1/reviews/project/:id       List reviews
+POST /api/v1/reviews                   Create review
+GET  /api/v1/evidence/review/:id       List evidence for a review
+POST /api/v1/evidence                  Create evidence
 ```
 
 ---
@@ -145,18 +152,52 @@ POST /api/v1/reviews              Create review
 ## Domain model
 
 ```
-Organization → Project → DigitalTwin → Subsystem (hierarchical)
-                                              └── Interface
-                                              └── Requirement (allocated)
-                               └── Variant
-                               └── Simulation → SimulationRun
-            └── Requirement (project-level)
-            └── Review → Evidence, Attachment
-User → OrganizationMember → Organization
-User → AuditEvent
+Organization --> OrganizationMember <-- User
+             --> Project --> ProjectMember <-- User   (M2: project-level access)
+                         --> DigitalTwin --> Subsystem (hierarchical, depth 0-n)
+                                                    --> Interface
+                                                    --> Requirement (allocated)
+                                         --> Variant (+ configuration JSON)  (M2)
+                                         --> Simulation --> SimulationRun
+                                                               --> requestedBy: User  (M2)
+                         --> Requirement (project-level)
+                         --> Review --> Evidence, Attachment
+User --> AuditEvent
 ```
 
 See `docs/architecture/overview.md` for the full system design.
+
+---
+
+## Authentication (Milestone 2 baseline)
+
+The API uses a simple bearer-token development auth strategy:
+
+- Send `Authorization: Bearer dev-token` to authenticate as an ADMIN user.
+- Any other non-empty token authenticates as a MEMBER-level user.
+- Routes decorated with `@Public()` bypass token checking.
+
+Real JWT verification (passport-jwt / @nestjs/passport) is planned for Milestone 3.
+
+**Access model:**
+- Coarse org-level roles: `ADMIN | MEMBER | VIEWER` via `OrganizationMember`.
+- Project-level access grants via `ProjectMember` -- a user can be `VIEWER` at org level but `MEMBER` on a specific project.
+- Fine-grained RBAC enforcement is deferred to Milestone 3.
+
+---
+
+## Data status (Milestone 2)
+
+| Data source        | Status                                          |
+|--------------------|-------------------------------------------------|
+| Project list       | Live -- loaded from API (`/api/v1/projects`)    |
+| Project workspace  | Live -- loaded from API                         |
+| Twin workspace     | Live -- subsystem tree loaded from API          |
+| Requirements       | Live -- loaded from API per project             |
+| Subsystem inspect  | Live -- loaded from API                         |
+| Variants           | API-backed (includes `configuration` JSON)      |
+| Simulations        | Seed data only -- orchestration in M4           |
+| Reviews/Evidence   | Seed data only -- review workflows in M3        |
 
 ---
 
@@ -174,12 +215,12 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 
 ## Delivery phases
 
-1. **M1** — Foundation: monorepo, schema v1, workspace shell, API baseline ✅
-2. **M2** — Auth, full CRUD, live API integration in web
-3. **M3** — Variant management, evidence chain, digital thread
-4. **M4** — Simulation orchestration and result ingestion
-5. **M5** — Multi-tenant SaaS hardening, observability
-6. **M6** — Kubernetes deployment, staging/production CI/CD
+1. **M1** -- Foundation: monorepo, schema v1, workspace shell, API baseline (done)
+2. **M2** -- Auth foundation, project membership, live API vertical slice (done)
+3. **M3** -- JWT auth, RBAC enforcement, variant management, review workflows
+4. **M4** -- Simulation orchestration and result ingestion
+5. **M5** -- Multi-tenant SaaS hardening, observability
+6. **M6** -- Kubernetes deployment, staging/production CI/CD
 
 ---
 
@@ -191,5 +232,6 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 | Backend     | NestJS 10, TypeScript, class-validator |
 | Database    | PostgreSQL 16, Prisma 5  |
 | Packages    | pnpm workspaces          |
+| Dev scripts | concurrently (portable process orchestration) |
 | Container   | Docker Compose           |
 | CI          | GitHub Actions           |

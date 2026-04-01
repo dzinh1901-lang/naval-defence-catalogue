@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { MOCK_PROJECTS } from '@/lib/mock-data';
+import { getProject, getTwin, listRequirements } from '@/lib/api';
 import { TwinWorkspace } from '@/components/twins/twin-workspace';
 
 interface Props {
@@ -8,25 +8,36 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { twinId } = await params;
-  const twin = findTwin(twinId);
-  return { title: twin?.name ?? 'Twin Workspace' };
+  try {
+    const twin = await getTwin(twinId);
+    return { title: twin?.name ?? 'Twin Workspace' };
+  } catch {
+    return { title: 'Twin Workspace' };
+  }
 }
 
 export default async function TwinPage({ params }: Props) {
   const { projectId, twinId } = await params;
-  const project = MOCK_PROJECTS.find((p) => p.id === projectId);
-  if (!project) redirect('/');
 
-  const twin = project.twins?.find((t) => t.id === twinId);
+  let project: Awaited<ReturnType<typeof getProject>> = null;
+  let twin: Awaited<ReturnType<typeof getTwin>> = null;
+  let requirements: Awaited<ReturnType<typeof listRequirements>> = [];
+
+  try {
+    [project, twin] = await Promise.all([
+      getProject(projectId),
+      getTwin(twinId),
+    ]);
+
+    if (project && twin) {
+      requirements = await listRequirements(project.id);
+    }
+  } catch {
+    redirect('/');
+  }
+
+  if (!project) redirect('/');
   if (!twin) redirect(`/projects/${projectId}`);
 
-  return <TwinWorkspace project={project} twin={twin} />;
-}
-
-function findTwin(twinId: string) {
-  for (const p of MOCK_PROJECTS) {
-    const t = p.twins?.find((tw) => tw.id === twinId);
-    if (t) return t;
-  }
-  return null;
+  return <TwinWorkspace project={project} twin={twin} requirements={requirements} />;
 }

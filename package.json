@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm --filter @naval/api start:dev & pnpm --filter @naval/web dev",
+    "dev": "concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"pnpm dev:api\" \"pnpm dev:web\"",
     "dev:web": "pnpm --filter @naval/web dev",
     "dev:api": "pnpm --filter @naval/api start:dev",
     "dev:worker": "pnpm --filter @naval/worker dev",
@@ -85,6 +85,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.25.0",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
