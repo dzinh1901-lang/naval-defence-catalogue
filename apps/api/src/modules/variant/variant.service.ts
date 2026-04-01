@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
@@ -13,7 +14,7 @@ export class VariantService {
         name: dto.name,
         description: dto.description ?? null,
         isBaseline: dto.isBaseline ?? false,
-        configuration: dto.configuration ?? {},
+        configuration: (dto.configuration ?? {}) as Prisma.InputJsonValue,
         twinId: dto.twinId,
       },
     });
@@ -42,7 +43,9 @@ export class VariantService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.isBaseline !== undefined && { isBaseline: dto.isBaseline }),
-        ...(dto.configuration !== undefined && { configuration: dto.configuration }),
+        ...(dto.configuration !== undefined && {
+          configuration: dto.configuration as Prisma.InputJsonValue,
+        }),
       },
     });
   }

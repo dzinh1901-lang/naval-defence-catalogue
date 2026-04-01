@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CreateSimulationDto } from './dto/create-simulation.dto';
 import type { CreateSimulationRunDto, UpdateSimulationRunDto } from './dto/simulation-run.dto';
@@ -15,7 +16,7 @@ export class SimulationService {
         name: dto.name,
         description: dto.description ?? null,
         type: (dto.type ?? 'STATIC') as 'STATIC' | 'DYNAMIC' | 'MONTE_CARLO',
-        config: dto.config ?? {},
+        config: (dto.config ?? {}) as Prisma.InputJsonValue,
         twinId: dto.twinId,
       },
     });
