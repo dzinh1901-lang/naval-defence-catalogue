@@ -3,9 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class EvidenceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(data: { reviewId: string; uri: string }) {
+  create(data: { title: string; reviewId: string; uri: string }) {
     return this.prisma.evidence.create({ data });
   }
 

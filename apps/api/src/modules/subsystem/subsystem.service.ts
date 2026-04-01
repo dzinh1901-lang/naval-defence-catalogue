@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { SubsystemStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSubsystemDto, UpdateSubsystemDto } from './dto/subsystem.dto';
 
@@ -50,9 +51,9 @@ export class SubsystemService {
       data: {
         name: dto.name,
         identifier: dto.identifier,
-        description: dto.description,
+        description: dto.description ?? null,
         twinId: dto.twinId,
-        parentId: dto.parentId,
+        parentId: dto.parentId ?? null,
         depth,
       },
     });
@@ -62,7 +63,11 @@ export class SubsystemService {
     await this.findOne(id);
     return this.prisma.subsystem.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.status !== undefined ? { status: dto.status as SubsystemStatus } : {}),
+      },
     });
   }
 

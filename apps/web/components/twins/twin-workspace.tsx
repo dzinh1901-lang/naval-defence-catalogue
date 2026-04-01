@@ -6,19 +6,19 @@ import type { Project, DigitalTwin, Subsystem, Requirement } from '@naval/domain
 import { cn, statusDotColor } from '@/lib/utils';
 import { SubsystemTree } from './subsystem-tree';
 import { SubsystemInspector } from './subsystem-inspector';
-import { MOCK_REQUIREMENTS } from '@/lib/mock-data';
 import { Home, Cpu, Layers } from 'lucide-react';
 
 interface TwinWorkspaceProps {
   project: Project;
   twin: DigitalTwin;
+  /** Requirements for this project — fetched server-side from the API. */
+  requirements?: Requirement[];
 }
 
-export function TwinWorkspace({ project, twin }: TwinWorkspaceProps) {
+export function TwinWorkspace({ project, twin, requirements = [] }: TwinWorkspaceProps) {
   const [selectedSubsystem, setSelectedSubsystem] = useState<Subsystem | null>(null);
 
   const subsystems = twin.subsystems ?? [];
-  const requirements = MOCK_REQUIREMENTS.filter((r) => r.projectId === project.id);
 
   return (
     <div className="h-full flex overflow-hidden bg-surface-0">
