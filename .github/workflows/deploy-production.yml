@@ -59,9 +59,6 @@ jobs:
             ghcr.io/dzinh1901-lang/naval-defence-catalogue/web:${{ steps.tag.outputs.tag }} \
             ghcr.io/dzinh1901-lang/naval-defence-catalogue/worker:${{ steps.tag.outputs.tag }}
 
-      - name: Apply Kubernetes manifests (production)
-        run: kubectl apply -k k8s/overlays/production
-
       - name: Apply secrets from GitHub Secrets
         run: |
           kubectl create secret generic naval-dt-secrets \
@@ -70,6 +67,9 @@ jobs:
             --from-literal=JWT_SECRET="${{ secrets.PRODUCTION_JWT_SECRET }}" \
             --from-literal=POSTGRES_PASSWORD="${{ secrets.PRODUCTION_POSTGRES_PASSWORD }}" \
             --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests (production)
+        run: kubectl apply -k k8s/overlays/production
 
       - name: Wait for rollout — API
         run: kubectl rollout status deployment/prod-api -n naval-dt-production --timeout=600s

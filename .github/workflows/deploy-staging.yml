@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Docker image tag to deploy (default: main)"
+        description: "Docker image tag to deploy (default: staging)"
         required: false
-        default: main
+        default: staging
 
 concurrency:
   group: deploy-staging
@@ -36,7 +36,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=main" >> "$GITHUB_OUTPUT"
+            echo "tag=staging" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up kubectl
@@ -64,9 +64,6 @@ jobs:
             ghcr.io/dzinh1901-lang/naval-defence-catalogue/web:${{ steps.tag.outputs.tag }} \
             ghcr.io/dzinh1901-lang/naval-defence-catalogue/worker:${{ steps.tag.outputs.tag }}
 
-      - name: Apply Kubernetes manifests (staging)
-        run: kubectl apply -k k8s/overlays/staging
-
       - name: Apply secrets from GitHub Secrets
         run: |
           kubectl create secret generic naval-dt-secrets \
@@ -75,6 +72,9 @@ jobs:
             --from-literal=JWT_SECRET="${{ secrets.STAGING_JWT_SECRET }}" \
             --from-literal=POSTGRES_PASSWORD="${{ secrets.STAGING_POSTGRES_PASSWORD }}" \
             --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests (staging)
+        run: kubectl apply -k k8s/overlays/staging
 
       - name: Wait for rollout — API
         run: kubectl rollout status deployment/staging-api -n naval-dt-staging --timeout=300s
