@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: naval-dt-config
+  namespace: naval-dt
+  labels:
+    app.kubernetes.io/name: naval-dt
+    app.kubernetes.io/managed-by: kustomize
+data:
+  NODE_ENV: "production"
+  PORT: "4000"
+  API_URL: "http://api:4000"
+  NEXT_PUBLIC_API_URL: "http://api:4000"
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "naval_dt"
+  DATABASE_USER: "naval"

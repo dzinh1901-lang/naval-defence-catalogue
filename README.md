@@ -21,13 +21,19 @@ packages/
 infra/
   docker/     Dockerfiles for api, web, and worker
 
+k8s/
+  base/       Base Kubernetes manifests (namespace, postgres, api, web, worker)
+  overlays/
+    staging/      Staging environment overrides (1 replica, staging hostname)
+    production/   Production environment overrides (3 replicas, HA limits)
+
 legacy/       Original Vite/React naval catalogue — preserved as reference
 
 docs/
   architecture/  System design and migration documentation
 
 .github/
-  workflows/  GitHub Actions CI (install -> typecheck -> build -> Prisma validate)
+  workflows/  GitHub Actions CI/CD (ci, docker build/push, deploy staging/production)
 ```
 
 ---
@@ -263,14 +269,70 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 
 ---
 
+## Kubernetes deployment (Milestone 6)
+
+Production Kubernetes manifests live under `k8s/` and are managed with **Kustomize**:
+
+```
+k8s/
+  base/               Base manifests (namespace, configmap, postgres, api, web, worker)
+  overlays/
+    staging/          Staging overrides (1 replica, staging hostname, smaller PVC)
+    production/       Production overrides (3 replicas, prod hostname, larger PVC, HA limits)
+```
+
+### Deploy to staging
+
+```bash
+kubectl apply -k k8s/overlays/staging
+```
+
+### Deploy to production
+
+```bash
+kubectl apply -k k8s/overlays/production
+```
+
+### Secrets
+
+Kubernetes Secrets are **not** committed to source control. Apply them separately:
+
+```bash
+kubectl create secret generic naval-dt-secrets \
+  --namespace=naval-dt-staging \
+  --from-literal=DATABASE_URL='postgresql://naval:<password>@postgres:5432/naval_dt' \
+  --from-literal=JWT_SECRET='<min-32-char-random-secret>' \
+  --from-literal=POSTGRES_PASSWORD='<db-password>' \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+### CI/CD pipelines
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `ci.yml` | Push / PR | Install, type-check, build, Prisma validate |
+| `docker.yml` | Push to `main` or version tags | Build & push Docker images to GHCR |
+| `deploy-staging.yml` | After `docker.yml` succeeds on `main` | Deploy to staging namespace |
+| `deploy-production.yml` | GitHub Release published or manual | Deploy to production namespace |
+
+Docker images are published to GitHub Container Registry (GHCR):
+
+```
+ghcr.io/dzinh1901-lang/naval-defence-catalogue/api:<tag>
+ghcr.io/dzinh1901-lang/naval-defence-catalogue/web:<tag>
+ghcr.io/dzinh1901-lang/naval-defence-catalogue/worker:<tag>
+```
+
+---
+
 ## Delivery phases
 
 1. **M1** -- Foundation: monorepo, schema v1, workspace shell, API baseline (done)
 2. **M2** -- Auth foundation, project membership, live API vertical slice (done)
 3. **M3** -- Variant management UI, review workflows, live counts (done)
-4. **M4** -- JWT auth, RBAC enforcement, simulation orchestration
-5. **M5** -- Multi-tenant SaaS hardening, observability
-6. **M6** -- Kubernetes deployment, staging/production CI/CD
+4. **M4** -- JWT auth, RBAC enforcement, simulation orchestration (done)
+5. **M5** -- Multi-tenant SaaS hardening, observability (done)
+6. **M6** -- Kubernetes deployment, staging/production CI/CD (done)
 
 ---
 
@@ -285,3 +347,4 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 | Dev scripts | concurrently (portable process orchestration) |
 | Container   | Docker Compose           |
 | CI          | GitHub Actions           |
+| Kubernetes  | Kustomize overlays (staging/production) |

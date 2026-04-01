@@ -43,6 +43,12 @@ packages/
 infra/
   docker/           Dockerfiles for api, web, worker
 
+k8s/
+  base/             Base Kubernetes manifests (Kustomize)
+  overlays/
+    staging/        Staging environment overrides
+    production/     Production environment overrides
+
 legacy/             Original Vite/React naval catalogue (preserved as reference)
   catalogue/        → client/, server/, shared/ content (legacy dev path)
 
@@ -125,6 +131,8 @@ POST /api/v1/evidence
 | Language              | TypeScript 5.6         | End-to-end type safety                 |
 | Container             | Docker + Compose       | Reproducible local dev                 |
 | CI                    | GitHub Actions         | Standard, cache-efficient              |
+| Kubernetes            | Kustomize overlays     | Staging/production environment parity  |
+| Container registry    | GHCR                   | Native GitHub integration, free for public repos |
 
 ## Infrastructure (local development)
 
@@ -132,6 +140,49 @@ POST /api/v1/evidence
 localhost:3000  → apps/web  (Next.js dev server)
 localhost:4000  → apps/api  (NestJS dev server)
 localhost:5432  → PostgreSQL (Docker)
+```
+
+## Infrastructure (Kubernetes — Milestone 6)
+
+Production and staging deployments use Kubernetes with Kustomize overlays:
+
+```
+k8s/
+  base/
+    namespace.yaml          naval-dt namespace
+    configmap.yaml          Non-sensitive env configuration
+    secret.yaml             Secret template (not committed with real values)
+    postgres/
+      pvc.yaml              10 Gi PersistentVolumeClaim for database data
+      deployment.yaml       PostgreSQL 16 single-instance deployment
+      service.yaml          ClusterIP service on port 5432
+    api/
+      deployment.yaml       NestJS API (2 replicas, health checks, resource limits)
+      service.yaml          ClusterIP service on port 4000
+    web/
+      deployment.yaml       Next.js web (2 replicas, health checks, resource limits)
+      service.yaml          ClusterIP service on port 3000
+      ingress.yaml          nginx Ingress routing /api → api, / → web
+    worker/
+      deployment.yaml       Background worker (1 replica)
+    kustomization.yaml      Base Kustomize manifest list
+  overlays/
+    staging/
+      kustomization.yaml    1 replica, staging hostname, 5 Gi PVC, :staging image tag
+    production/
+      kustomization.yaml    3 replicas, prod hostname, 50 Gi PVC, HA resource limits
+```
+
+### CI/CD pipeline (M6)
+
+```
+Push to main ──► docker.yml ──► build & push images to GHCR
+                    │
+                    └──► deploy-staging.yml ──► kubectl apply -k k8s/overlays/staging
+                                                wait for rollout + smoke test
+
+GitHub Release ──► deploy-production.yml ──► kubectl apply -k k8s/overlays/production
+                                              wait for rollout + smoke test
 ```
 
 ## Future milestones
@@ -144,3 +195,5 @@ localhost:5432  → PostgreSQL (Docker)
 | M4        | Simulation orchestration, result ingestion      |
 | M5        | Multi-tenant SaaS hardening, observability      |
 | M6        | Kubernetes deployment, staging/production CI/CD |
+
+All milestones M1–M6 are complete.

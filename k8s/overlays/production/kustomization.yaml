@@ -1,0 +1,80 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: naval-dt-production
+
+namePrefix: prod-
+
+resources:
+  - ../../base
+
+# Override namespace name
+patches:
+  - target:
+      kind: Namespace
+      name: naval-dt
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: naval-dt-production
+
+  # Production: higher replica counts for HA
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  - target:
+      kind: Deployment
+      name: web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+
+  # Production: larger PVC
+  - target:
+      kind: PersistentVolumeClaim
+      name: postgres-data
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 50Gi
+
+  # Production: higher resource limits for API
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1000m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "200m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+
+  # Production: update ingress host
+  - target:
+      kind: Ingress
+      name: naval-dt-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: naval-dt.example.com
+
+images:
+  - name: ghcr.io/dzinh1901-lang/naval-defence-catalogue/api
+    newTag: v1.0.0-m6
+  - name: ghcr.io/dzinh1901-lang/naval-defence-catalogue/web
+    newTag: v1.0.0-m6
+  - name: ghcr.io/dzinh1901-lang/naval-defence-catalogue/worker
+    newTag: v1.0.0-m6
