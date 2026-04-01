@@ -25,7 +25,7 @@ export function TwinWorkspace({ project, twin, requirements = [], variants = [] 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 
   const subsystems = twin.subsystems ?? [];
-  const twinVariants = variants.length > 0 ? variants : (twin.variants ?? []);
+  const twinVariants = variants;
   const twinSimulations = twin.simulations ?? [];
 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; count?: number }[] = [

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { Project, Requirement, Review } from '@naval/domain';
 import { cn, statusDotColor, formatDate } from '@/lib/utils';
-import { Cpu, FileText, GitBranch, PlayCircle, ArrowRight, Home, ClipboardList, AlertCircle } from 'lucide-react';
+import { Cpu, FileText, PlayCircle, ArrowRight, Home, ClipboardList, AlertCircle } from 'lucide-react';
 import { ReviewsPanel } from '@/components/reviews/reviews-panel';
 
 interface ProjectWorkspaceProps {
@@ -16,11 +16,6 @@ export function ProjectWorkspace({ project, requirements = [], reviews = [] }: P
   const twinCount = project.twins?.length ?? 0;
   const reqCount = requirements.length;
   const reviewCount = reviews.length;
-  // Count variants from all twins
-  const variantCount = project.twins?.reduce(
-    (sum, t) => sum + ((t as { variants?: unknown[] }).variants?.length ?? 0),
-    0,
-  ) ?? 0;
   const openReviews = reviews.filter((r) => r.status === 'OPEN' || r.status === 'IN_REVIEW');
 
   return (
@@ -55,8 +50,8 @@ export function ProjectWorkspace({ project, requirements = [], reviews = [] }: P
             {[
               { label: 'Digital Twins', value: twinCount, icon: <Cpu size={16} />, color: 'text-naval-cyan' },
               { label: 'Requirements', value: reqCount, icon: <FileText size={16} />, color: 'text-naval-indigo' },
-              { label: 'Variants', value: variantCount, icon: <GitBranch size={16} />, color: 'text-naval-teal' },
-              { label: 'Reviews', value: reviewCount, icon: <PlayCircle size={16} />, color: 'text-naval-amber' },
+              { label: 'Open Reviews', value: openReviews.length, icon: <ClipboardList size={16} />, color: 'text-naval-amber' },
+              { label: 'Total Reviews', value: reviewCount, icon: <PlayCircle size={16} />, color: 'text-naval-teal' },
             ].map((stat) => (
               <div key={stat.label} className="rounded-lg bg-surface-1 border border-border-subtle p-3">
                 <div className={cn('mb-1', stat.color)}>{stat.icon}</div>
