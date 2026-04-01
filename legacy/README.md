@@ -4,12 +4,13 @@ This directory contains the original Vite/React naval defence catalogue applicat
 
 ## Contents
 
-The legacy catalogue source lives at the repository root in:
-- `client/` — Vite + React frontend (naval defence catalogue UI)
-- `server/` — Express development server
-- `shared/` — Shared constants/types for the legacy app
-- `vite.config.ts` — Vite configuration
-- `components.json` — shadcn/ui component registry
+The legacy catalogue source lives in `legacy/catalogue/`:
+- `catalogue/client/` — Vite + React frontend (naval defence catalogue UI)
+- `catalogue/server/` — Express development server
+- `catalogue/shared/` — Shared constants/types for the legacy app
+- `catalogue/vite.config.ts` — Vite configuration
+- `catalogue/components.json` — shadcn/ui component registry
+- `catalogue/tsconfig.json` / `catalogue/tsconfig.node.json` — TypeScript config
 
 ## Running the legacy catalogue
 

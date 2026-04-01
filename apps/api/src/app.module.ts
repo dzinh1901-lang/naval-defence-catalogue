@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { VariantModule } from './modules/variant/variant.module';
 import { SimulationModule } from './modules/simulation/simulation.module';
 import { IntelligenceModule } from './modules/intelligence/intelligence.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
@@ -47,6 +48,7 @@ import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware
     VariantModule,
     SimulationModule,
     IntelligenceModule,
+    AuditModule,
   ],
   providers: [
     // Global authentication guard — runs on every request.

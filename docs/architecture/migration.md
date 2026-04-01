@@ -7,13 +7,13 @@ to the Naval Digital Twin Platform monorepo architecture.
 
 ## What existed before (legacy catalogue)
 
-| Asset                 | Location            | Description                                   |
-|-----------------------|---------------------|-----------------------------------------------|
-| Vite + React frontend | `client/`           | Static naval systems catalogue with rich UI   |
-| Express dev server    | `server/`           | Simple static-serving Express server          |
-| Shared constants      | `shared/`           | Shared catalogue data constants               |
-| Vite config           | `vite.config.ts`    | Build configuration with debug plugins        |
-| shadcn/ui registry    | `components.json`   | Component configuration                       |
+| Asset                 | Location                           | Description                                   |
+|-----------------------|------------------------------------|-----------------------------------------------|
+| Vite + React frontend | `legacy/catalogue/client/`         | Static naval systems catalogue with rich UI   |
+| Express dev server    | `legacy/catalogue/server/`         | Simple static-serving Express server          |
+| Shared constants      | `legacy/catalogue/shared/`         | Shared catalogue data constants               |
+| Vite config           | `legacy/catalogue/vite.config.ts`  | Build configuration with debug plugins        |
+| shadcn/ui registry    | `legacy/catalogue/components.json` | Component configuration                       |
 
 The legacy catalogue is a **polished single-page application** with:
 - Naval system category browser
@@ -64,17 +64,15 @@ It is built on **Vite + Wouter + Tailwind CSS v4 + Radix UI**.
 
 ## Running the legacy catalogue
 
-The legacy catalogue continues to work from the repository root:
+The legacy catalogue is now isolated in `legacy/catalogue/` as a proper pnpm workspace package (`@naval/legacy-catalogue`).
 
 ```bash
-# Install dependencies
+# Install dependencies (run once)
 pnpm install
 
 # Start the legacy Vite dev server
 pnpm dev:legacy
 ```
-
-The legacy catalogue is served on `http://localhost:3000` (or next available port).
 
 ## Running the new platform
 
@@ -117,7 +115,6 @@ Phase 1 migration tasks (Milestone 2):
 
 1. **Port conflict**: Both the legacy catalogue and `apps/web` use port 3000.
    Run `pnpm dev:legacy` (catalogue) or `pnpm dev:web` (new platform) — not both simultaneously.
-2. **Root tsconfig.json**: The root tsconfig targets the legacy Vite app.
-   The new apps use their own tsconfigs extending `packages/config`.
-3. **Dependencies at root**: The root `package.json` retains legacy catalogue dependencies.
-   Future cleanup will move them into `legacy/catalogue/package.json`.
+2. **`@builder.io/vite-plugin-jsx-loc` peer warning**: the legacy catalogue uses this Vite plugin which
+   declares a peer dep on Vite 4/5 while the workspace installs Vite 7. This warning is benign and
+   limited to the legacy app only.

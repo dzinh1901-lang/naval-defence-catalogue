@@ -33,9 +33,9 @@ export class IntelligenceController {
   ) {
     const dto: RagQueryDto = {
       query: query ?? '',
-      topK: topK !== undefined ? parseInt(topK, 10) : undefined,
-      twinId,
-      projectId,
+      ...(topK !== undefined ? { topK: parseInt(topK, 10) } : {}),
+      ...(twinId !== undefined ? { twinId } : {}),
+      ...(projectId !== undefined ? { projectId } : {}),
     };
     return this.service.ragQuery(dto);
   }
