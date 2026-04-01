@@ -38,7 +38,7 @@ export function KeyframeSection() {
           <SkipForward size={12} />
         </button>
         <span className="text-2xs font-mono text-text-muted ml-1">
-          #{String(frame).padStart(2, '0')}
+          #{String(frame).padStart(3, '0')}
         </span>
         <button className="ml-auto h-6 w-6 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-surface-3 transition-colors">
           <List size={12} />

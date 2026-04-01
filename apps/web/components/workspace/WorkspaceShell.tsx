@@ -74,8 +74,7 @@ export function WorkspaceShell({
     }) => {
       try {
         const apiBase =
-          (typeof window !== 'undefined' && (window as any).__NEXT_PUBLIC_API_URL__) ||
-          process.env['NEXT_PUBLIC_API_URL'] ||
+          process.env['NEXT_PUBLIC_API_URL'] ??
           'http://localhost:4000';
 
         await fetch(`${apiBase}/api/v1/workspace/${twinId}/view-config`, {

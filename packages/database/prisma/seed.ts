@@ -752,7 +752,7 @@ async function main() {
         id: 'log-005',
         twinId: frigateTwin.id,
         actorId: engineerUser.id,
-        action: 'Structural new updated',
+        action: 'Structural geometry added',
         detail: 'Added forward deck geometry from revised hull lines.',
         version: 'v2.41',
       },
