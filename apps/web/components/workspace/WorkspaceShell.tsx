@@ -15,6 +15,7 @@ import { InspectorPanel } from './InspectorPanel';
 import { AlertsOverlay } from './AlertsOverlay';
 import { HistoryOverlay } from './HistoryOverlay';
 import { AlertTriangle, Clock } from 'lucide-react';
+import { getPublicApiAuthToken, getPublicApiBase } from '@/lib/env';
 import { cn } from '@/lib/utils';
 
 export type WorkspaceSection =
@@ -73,12 +74,8 @@ export function WorkspaceShell({
       camFstop?: number;
     }) => {
       try {
-        const apiBase =
-          process.env['NEXT_PUBLIC_API_URL'] ??
-          'http://localhost:4000';
-        const apiToken =
-          process.env['NEXT_PUBLIC_API_AUTH_TOKEN'] ??
-          (process.env['NODE_ENV'] === 'production' ? undefined : 'dev-token');
+        const apiBase = getPublicApiBase();
+        const apiToken = getPublicApiAuthToken();
 
         await fetch(`${apiBase}/api/v1/workspace/${twinId}/view-config`, {
           method: 'PATCH',

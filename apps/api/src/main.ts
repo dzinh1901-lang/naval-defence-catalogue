@@ -3,8 +3,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { assertAuthEnvironment } from './modules/auth/auth-env';
 
 async function bootstrap() {
+  assertAuthEnvironment();
   const app = await NestFactory.create(AppModule, { bufferLogs: true, cors: true });
 
   // Use structured Pino logger for all NestJS internal log output.

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { RequestUser } from '../../common/types/request-user.type';
+import { canUseDevAuthFallback } from './auth-env';
 import type { JwtPayload } from './jwt.strategy';
 
 /**
@@ -59,27 +60,33 @@ export class AuthService {
       // Token is not a valid JWT — fall through to dev sentinel check.
     }
 
-    // ── Dev-token fallback (only when JWT_SECRET is absent from env) ───────
-    if (process.env['JWT_SECRET']) {
-      // In production (JWT_SECRET set) reject anything that isn't a valid JWT.
+    // ── Dev-token fallback (development only when JWT_SECRET is absent) ─────
+    if (!canUseDevAuthFallback()) {
       return null;
     }
 
-    if (token === 'dev-token') {
-      return {
+    const devUsers: Record<string, RequestUser> = {
+      'dev-token': {
         userId: 'dev-user-admin',
         email: 'cmdr.lee@naval-systems.dev',
         organizationId: 'dev-org',
         role: 'ADMIN',
-      };
-    }
-
-    return {
-      userId: 'dev-user-member',
-      email: 'eng.chen@naval-systems.dev',
-      organizationId: 'dev-org',
-      role: 'MEMBER',
+      },
+      'dev-member-token': {
+        userId: 'dev-user-member',
+        email: 'eng.chen@naval-systems.dev',
+        organizationId: 'dev-org',
+        role: 'MEMBER',
+      },
+      'dev-viewer-token': {
+        userId: 'dev-user-viewer',
+        email: 'analyst.kowalski@naval-systems.dev',
+        organizationId: 'dev-org',
+        role: 'VIEWER',
+      },
     };
+
+    return devUsers[token] ?? null;
   }
 
   /** @deprecated Use validateToken instead */

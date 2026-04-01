@@ -24,30 +24,11 @@ import type {
   WorkspaceViewConfig,
   UpdateViewConfigDto,
 } from '@naval/domain';
-
-// ── Base config ──────────────────────────────────────────────────────────────
-
-function getApiBase(): string {
-  const base = process.env['API_URL'] ?? process.env['NEXT_PUBLIC_API_URL'];
-  if (!base) {
-    throw new Error(
-      'API_URL is not configured. Set API_URL (server-side) in your environment.',
-    );
-  }
-  return base.replace(/\/$/, '');
-}
-
-function getApiAuthToken(): string | undefined {
-  return (
-    process.env['API_AUTH_TOKEN'] ??
-    process.env['NEXT_PUBLIC_API_AUTH_TOKEN'] ??
-    (process.env['NODE_ENV'] === 'production' ? undefined : 'dev-token')
-  );
-}
+import { getServerApiAuthToken, getServerApiBase } from './env';
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${getApiBase()}/api/v1${path}`;
-  const token = getApiAuthToken();
+  const url = `${getServerApiBase()}/api/v1${path}`;
+  const token = getServerApiAuthToken();
 
   const res = await fetch(url, {
     ...options,

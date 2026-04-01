@@ -40,10 +40,16 @@ docs/
 - pnpm 10+
 - Docker Desktop or Docker Engine with Compose
 
+Enable Corepack before running workspace commands:
+
+```bash
+corepack enable
+```
+
 ### 1. Install dependencies
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 ### 2. Configure environment
@@ -63,7 +69,9 @@ docker compose up db -d
 ### 4. Initialise the database
 
 ```bash
-pnpm db:migrate      # Run Prisma migrations
+pnpm db:validate     # Validate Prisma schema and DATABASE_URL wiring
+pnpm db:generate     # Generate Prisma client after a clean install
+pnpm db:migrate      # Run Prisma migrations in local development
 pnpm db:seed         # Seed with realistic naval domain sample data
 ```
 
@@ -79,11 +87,22 @@ pnpm dev:web         # http://localhost:3000
 pnpm dev:worker      # background worker
 ```
 
+### 6. Verify a fresh checkout
+
+```bash
+pnpm verify
+```
+
 ### Full containerised stack
 
 ```bash
-docker compose up
+docker compose up --build
+pnpm smoke:http
 ```
+
+`docker compose up --build` is clean-room safe: the API and worker containers install
+dependencies into named volumes, generate Prisma client code, and the API applies committed
+migrations plus the local seed before it starts.
 
 ---
 
@@ -102,10 +121,17 @@ docker compose up
 
 ```bash
 # Database
+pnpm db:validate    # Validate Prisma schema
 pnpm db:generate    # Regenerate Prisma client after schema changes
 pnpm db:migrate     # Run pending migrations (dev)
+pnpm db:migrate:deploy  # Apply committed migrations (CI/staging/prod)
+pnpm db:migrate:status  # Show migration status against DATABASE_URL
 pnpm db:seed        # Re-seed the database
 pnpm db:studio      # Open Prisma Studio in browser
+
+# Verification
+pnpm verify         # Lint + Prisma validate/generate + typecheck + build + artifact checks
+pnpm smoke:http     # HTTP smoke test for local API/web
 
 # Build
 pnpm build          # Build all apps and packages
@@ -185,22 +211,35 @@ The API uses JWT-based authentication via `@nestjs/passport` and `passport-jwt`.
 
 | Variable | Required | Description |
 |---|---|---|
-| `JWT_SECRET` | Production only | HS256 signing secret (min 32 chars). Falls back to `dev-secret-change-in-production` in dev. |
+| `JWT_SECRET` | Production | HS256 signing secret (min 32 chars). The API refuses to boot in production if it is missing or too short. |
 | `JWT_EXPIRES_IN_SECS` | Optional | Token lifetime in seconds (default: 604800 = 7 days). |
-| `AUTH_BOOTSTRAP_SECRET` | Optional | Secret for `POST /auth/token` — dev/service-account token issuance. |
+| `AUTH_BOOTSTRAP_SECRET` | Optional | Secret for `POST /auth/token` — dev/service-account token issuance. Must be at least 8 characters when set. |
+| `API_URL` | Web runtime | Server-side base URL used by the Next.js app to call the API. |
+| `NEXT_PUBLIC_API_URL` | Browser runtime | Browser-visible API base URL for client-side fetches. |
+| `API_AUTH_TOKEN` | Optional | Server-side bearer token used by the web app for protected API calls. |
+| `NEXT_PUBLIC_API_AUTH_TOKEN` | Optional | Browser-side bearer token used by interactive workspace updates. |
 
 ### Development
 
-Without `JWT_SECRET` set, the API falls back to the legacy dev-token sentinel:
+Without `JWT_SECRET` set, the API only accepts the explicit seeded development tokens:
 
 - `Authorization: Bearer dev-token` → ADMIN user
-- Any other non-empty token → MEMBER user
+- `Authorization: Bearer dev-member-token` → MEMBER user
+- `Authorization: Bearer dev-viewer-token` → VIEWER user
 - Routes decorated with `@Public()` bypass token checking.
 
 ### Issuing JWT tokens
 
 `POST /api/v1/auth/token` accepts a `bootstrapSecret` + user fields and returns a signed JWT.
 In production, replace this endpoint with a proper identity provider flow (OIDC/OAuth2).
+
+### Production expectations
+
+- Set `NODE_ENV=production`.
+- Set a strong `JWT_SECRET` before starting the API. Production startup fails fast without it.
+- The web app stops defaulting to `dev-token` when `NODE_ENV=production`.
+- Run `pnpm db:migrate:deploy` before rolling out API or worker changes.
+- Set `API_URL` and `NEXT_PUBLIC_API_URL` explicitly for deployed web environments.
 
 ### Access model — RBAC (Milestone 4)
 
@@ -215,6 +254,72 @@ Fine-grained RBAC is enforced on all write endpoints:
 **Project-level precedence:** A user's `ProjectMember` role overrides their org-level role for
 project-scoped operations. For example, a `VIEWER` at org level with a `MEMBER` `ProjectMember`
 record can create resources within that specific project.
+
+---
+
+## Prisma workflow
+
+### Local schema changes
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+```
+
+### CI / staging / production
+
+```bash
+pnpm db:validate
+pnpm db:generate
+pnpm db:migrate:deploy
+pnpm db:migrate:status
+```
+
+Use `db:migrate` only for local development when creating new migrations. Use
+`db:migrate:deploy` everywhere else so committed migrations apply deterministically.
+
+---
+
+## Deployment and smoke-test checklist
+
+### Local / fresh checkout
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+cp .env.example .env
+docker compose up db -d
+pnpm db:validate
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+pnpm verify
+pnpm dev:api
+pnpm dev:web
+pnpm dev:worker
+pnpm smoke:http
+```
+
+### Docker / Compose
+
+```bash
+docker compose down -v
+docker compose up --build
+pnpm smoke:http
+docker compose logs -f api web worker
+```
+
+### Staging / production expectations
+
+1. Build and publish the API, web, and worker images from `infra/docker/`.
+2. Apply committed Prisma migrations with `pnpm db:migrate:deploy`.
+3. Confirm `JWT_SECRET`, `API_URL`, `NEXT_PUBLIC_API_URL`, and any bootstrap/service tokens are set.
+4. Smoke-test:
+   - `GET /api/v1/health`
+   - `GET /api/v1/projects` with a valid bearer token
+   - Web homepage renders live project data
+   - Worker starts and logs `Database connection OK`
 
 ---
 
