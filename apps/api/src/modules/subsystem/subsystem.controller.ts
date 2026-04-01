@@ -12,6 +12,8 @@ import {
 import { SubsystemService } from './subsystem.service';
 import { CreateSubsystemDto, UpdateSubsystemDto } from './dto/subsystem.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { RequestUser } from '../../common/types/request-user.type';
 
 @Controller('subsystems')
 export class SubsystemController {
@@ -25,8 +27,8 @@ export class SubsystemController {
 
   @Get(':id')
   @Version('1')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.service.findOne(id, user.organizationId);
   }
 
   @Post()
@@ -39,14 +41,14 @@ export class SubsystemController {
   @Patch(':id')
   @Version('1')
   @Roles('MEMBER', 'ADMIN')
-  update(@Param('id') id: string, @Body() dto: UpdateSubsystemDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateSubsystemDto, @CurrentUser() user: RequestUser) {
+    return this.service.update(id, user.organizationId, dto);
   }
 
   @Delete(':id')
   @Version('1')
   @Roles('ADMIN')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.service.remove(id, user.organizationId);
   }
 }

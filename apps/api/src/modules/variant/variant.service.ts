@@ -26,14 +26,16 @@ export class VariantService {
     });
   }
 
-  async findOne(id: string) {
-    const variant = await this.prisma.variant.findUnique({ where: { id } });
+  async findOne(id: string, organizationId: string) {
+    const variant = await this.prisma.variant.findFirst({
+      where: { id, twin: { project: { organizationId } } },
+    });
     if (!variant) throw new NotFoundException(`Variant ${id} not found`);
     return variant;
   }
 
-  async update(id: string, dto: UpdateVariantDto) {
-    await this.findOne(id);
+  async update(id: string, organizationId: string, dto: UpdateVariantDto) {
+    await this.findOne(id, organizationId);
     return this.prisma.variant.update({
       where: { id },
       data: {
@@ -45,8 +47,8 @@ export class VariantService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, organizationId: string) {
+    await this.findOne(id, organizationId);
     return this.prisma.variant.delete({ where: { id } });
   }
 }

@@ -136,11 +136,11 @@ localhost:5432  → PostgreSQL (Docker)
 
 ## Future milestones
 
-| Milestone | Focus                                           |
-|-----------|-------------------------------------------------|
-| M1        | Foundation, monorepo, schema, workspace shell   |
-| M2        | Auth (JWT/OAuth), full CRUD, live API in web    |
-| M3        | Variant management, evidence chain              |
-| M4        | Simulation orchestration, result ingestion      |
-| M5        | Multi-tenant SaaS hardening, observability      |
-| M6        | Kubernetes deployment, staging/production CI/CD |
+| Milestone | Focus                                           | Status |
+|-----------|-------------------------------------------------|--------|
+| M1        | Foundation, monorepo, schema, workspace shell   | done   |
+| M2        | Auth (JWT/OAuth), full CRUD, live API in web    | done   |
+| M3        | Variant management, evidence chain              | done   |
+| M4        | Simulation orchestration, result ingestion      | done   |
+| M5        | Multi-tenant SaaS hardening, observability      | done   |
+| M6        | Kubernetes deployment, staging/production CI/CD |        |

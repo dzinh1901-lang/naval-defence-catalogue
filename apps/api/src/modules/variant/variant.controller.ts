@@ -3,6 +3,8 @@ import { VariantService } from './variant.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { RequestUser } from '../../common/types/request-user.type';
 
 @Controller('variants')
 export class VariantController {
@@ -29,11 +31,11 @@ export class VariantController {
 
   /**
    * GET /api/v1/variants/:id
-   * Get a single variant by ID.
+   * Get a single variant by ID, scoped to the authenticated user's organization.
    */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.service.findOne(id, user.organizationId);
   }
 
   /**
@@ -42,8 +44,8 @@ export class VariantController {
    */
   @Patch(':id')
   @Roles('MEMBER', 'ADMIN')
-  update(@Param('id') id: string, @Body() dto: UpdateVariantDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateVariantDto, @CurrentUser() user: RequestUser) {
+    return this.service.update(id, user.organizationId, dto);
   }
 
   /**
@@ -52,7 +54,7 @@ export class VariantController {
    */
   @Delete(':id')
   @Roles('ADMIN')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.service.remove(id, user.organizationId);
   }
 }

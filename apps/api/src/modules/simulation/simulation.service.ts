@@ -28,9 +28,9 @@ export class SimulationService {
     });
   }
 
-  async findOne(id: string) {
-    const sim = await this.prisma.simulation.findUnique({
-      where: { id },
+  async findOne(id: string, organizationId: string) {
+    const sim = await this.prisma.simulation.findFirst({
+      where: { id, twin: { project: { organizationId } } },
       include: {
         runs: {
           orderBy: { createdAt: 'desc' },
@@ -46,10 +46,9 @@ export class SimulationService {
 
   // ── Simulation Runs ────────────────────────────────────────────────────────
 
-  async createRun(simulationId: string, dto: CreateSimulationRunDto) {
-    // Verify the simulation exists before creating a run.
-    const sim = await this.prisma.simulation.findUnique({ where: { id: simulationId } });
-    if (!sim) throw new NotFoundException(`Simulation ${simulationId} not found`);
+  async createRun(simulationId: string, organizationId: string, dto: CreateSimulationRunDto) {
+    // Verify the simulation exists and belongs to the requesting tenant.
+    await this.findOne(simulationId, organizationId);
 
     return this.prisma.simulationRun.create({
       data: {
