@@ -47,9 +47,9 @@ export class TwinService {
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.digitalTwin.findUnique({
-      where: { id },
+  async findOne(id: string, organizationId: string) {
+    const twin = await this.prisma.digitalTwin.findFirst({
+      where: { id, project: { organizationId } },
       include: {
         project: { select: { id: true, name: true, slug: true, organizationId: true } },
         subsystems: {
@@ -87,5 +87,6 @@ export class TwinService {
         },
       },
     });
+    return twin;
   }
 }

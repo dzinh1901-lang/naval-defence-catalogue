@@ -2,6 +2,8 @@ import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/c
 import { TwinService } from './twin.service';
 import { CreateTwinDto } from './dto/create-twin.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { RequestUser } from '../../common/types/request-user.type';
 
 @Controller('twins')
 export class TwinController {
@@ -28,11 +30,11 @@ export class TwinController {
 
   /**
    * GET /api/v1/twins/:id
-   * Get a single digital twin by ID with subsystems, variants, and simulations.
+   * Get a single digital twin by ID, scoped to the authenticated user's organization.
    */
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const twin = await this.service.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    const twin = await this.service.findOne(id, user.organizationId);
     if (!twin) throw new NotFoundException(`DigitalTwin ${id} not found`);
     return twin;
   }

@@ -268,8 +268,8 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 1. **M1** -- Foundation: monorepo, schema v1, workspace shell, API baseline (done)
 2. **M2** -- Auth foundation, project membership, live API vertical slice (done)
 3. **M3** -- Variant management UI, review workflows, live counts (done)
-4. **M4** -- JWT auth, RBAC enforcement, simulation orchestration
-5. **M5** -- Multi-tenant SaaS hardening, observability
+4. **M4** -- JWT auth, RBAC enforcement, simulation orchestration (done)
+5. **M5** -- Multi-tenant SaaS hardening, observability (done)
 6. **M6** -- Kubernetes deployment, staging/production CI/CD
 
 ---

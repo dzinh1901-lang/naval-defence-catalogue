@@ -1,10 +1,14 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, cors: true });
+
+  // Use structured Pino logger for all NestJS internal log output.
+  app.useLogger(app.get(Logger));
 
   // Versioned API prefix: /api/v1/...
   app.setGlobalPrefix('api');
@@ -21,8 +25,9 @@ async function bootstrap() {
 
   const port = process.env['PORT'] ?? 4000;
   await app.listen(port);
-  console.log(`\n🚀  Naval DTP API listening on http://localhost:${port}/api/v1`);
-  console.log(`   Health: http://localhost:${port}/api/v1/health\n`);
+  app
+    .get(Logger)
+    .log(`🚀  Naval DTP API listening on http://localhost:${port}/api/v1`);
 }
 
 bootstrap();

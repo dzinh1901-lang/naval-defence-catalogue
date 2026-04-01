@@ -31,9 +31,9 @@ export class ReviewService {
     });
   }
 
-  async findOne(id: string) {
-    const review = await this.prisma.review.findUnique({
-      where: { id },
+  async findOne(id: string, organizationId: string) {
+    const review = await this.prisma.review.findFirst({
+      where: { id, project: { organizationId } },
       include: {
         evidence: true,
         createdBy: { select: { id: true, name: true, email: true, avatarUrl: true } },
@@ -43,8 +43,8 @@ export class ReviewService {
     return review;
   }
 
-  async update(id: string, dto: UpdateReviewDto) {
-    await this.findOne(id);
+  async update(id: string, organizationId: string, dto: UpdateReviewDto) {
+    await this.findOne(id, organizationId);
     return this.prisma.review.update({
       where: { id },
       data: { ...(dto.status !== undefined && { status: dto.status as never }) },

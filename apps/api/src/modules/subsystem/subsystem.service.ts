@@ -23,9 +23,9 @@ export class SubsystemService {
     });
   }
 
-  async findOne(id: string) {
-    const subsystem = await this.prisma.subsystem.findUnique({
-      where: { id },
+  async findOne(id: string, organizationId: string) {
+    const subsystem = await this.prisma.subsystem.findFirst({
+      where: { id, twin: { project: { organizationId } } },
       include: {
         parent: true,
         children: { include: { interfaces: true } },
@@ -59,8 +59,8 @@ export class SubsystemService {
     });
   }
 
-  async update(id: string, dto: UpdateSubsystemDto) {
-    await this.findOne(id);
+  async update(id: string, organizationId: string, dto: UpdateSubsystemDto) {
+    await this.findOne(id, organizationId);
     return this.prisma.subsystem.update({
       where: { id },
       data: {
@@ -71,8 +71,8 @@ export class SubsystemService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, organizationId: string) {
+    await this.findOne(id, organizationId);
     return this.prisma.subsystem.delete({ where: { id } });
   }
 }

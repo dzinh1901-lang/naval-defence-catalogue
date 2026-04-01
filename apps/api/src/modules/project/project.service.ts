@@ -18,10 +18,10 @@ export class ProjectService {
     });
   }
 
-  findAll(filters: { organizationId?: string; status?: string } = {}) {
+  findAll(filters: { organizationId: string; status?: string }) {
     return this.prisma.project.findMany({
       where: {
-        ...(filters.organizationId ? { organizationId: filters.organizationId } : {}),
+        organizationId: filters.organizationId,
         ...(filters.status ? { status: filters.status as never } : {}),
       },
       include: {
@@ -48,9 +48,9 @@ export class ProjectService {
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.project.findUnique({
-      where: { id },
+  findOne(id: string, organizationId: string) {
+    return this.prisma.project.findFirst({
+      where: { id, organizationId },
       include: {
         twins: {
           select: {

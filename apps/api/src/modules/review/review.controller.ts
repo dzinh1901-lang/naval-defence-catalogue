@@ -3,6 +3,8 @@ import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { RequestUser } from '../../common/types/request-user.type';
 
 @Controller('reviews')
 export class ReviewController {
@@ -29,11 +31,11 @@ export class ReviewController {
 
   /**
    * GET /api/v1/reviews/:id
-   * Get a single review by ID.
+   * Get a single review by ID, scoped to the authenticated user's organization.
    */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.service.findOne(id, user.organizationId);
   }
 
   /**
@@ -42,7 +44,7 @@ export class ReviewController {
    */
   @Patch(':id')
   @Roles('MEMBER', 'ADMIN')
-  update(@Param('id') id: string, @Body() dto: UpdateReviewDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateReviewDto, @CurrentUser() user: RequestUser) {
+    return this.service.update(id, user.organizationId, dto);
   }
 }

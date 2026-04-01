@@ -42,8 +42,8 @@ export class SimulationController {
    * Get a simulation with its run history.
    */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestUser) {
+    return this.service.findOne(id, user.organizationId);
   }
 
   /**
@@ -63,7 +63,7 @@ export class SimulationController {
       ...dto,
       requestedById: dto.requestedById ?? user.userId,
     };
-    return this.service.createRun(simulationId, runDto);
+    return this.service.createRun(simulationId, user.organizationId, runDto);
   }
 
   /**
