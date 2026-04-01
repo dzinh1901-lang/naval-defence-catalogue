@@ -34,5 +34,8 @@ export function getPublicApiBase(): string {
 }
 
 export function getPublicApiAuthToken(): string | undefined {
-  return getFirstConfiguredValue(process.env['NEXT_PUBLIC_API_AUTH_TOKEN']) ?? (isProductionEnv() ? undefined : 'dev-token');
+  return (
+    getFirstConfiguredValue(process.env['NEXT_PUBLIC_API_AUTH_TOKEN']) ??
+    (isProductionEnv() ? undefined : 'dev-token')
+  );
 }

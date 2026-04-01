@@ -33,25 +33,32 @@ services:
   # ── NestJS API ────────────────────────────────────────────────
   # Uses source volume mounts for hot-reload via `nest start --watch`
   api:
-    image: node:20-alpine
+    image: node:20
     working_dir: /app
     command: sh /app/infra/docker/dev-entrypoint.sh api
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql://naval:naval_dev@db:5432/naval_dt
       PORT: 4000
       NODE_ENV: development
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/v1/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:4000/api/v1/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
       interval: 15s
       timeout: 5s
       retries: 10
+      start_period: 90s
     ports:
       - "4000:4000"
     volumes:
       - .:/app
       - api_node_modules:/app/node_modules
+      - api_dist:/app/apps/api/dist
       - pnpm_store:/pnpm/store
     depends_on:
       db:
@@ -61,11 +68,12 @@ services:
   # ── Next.js Web ───────────────────────────────────────────────
   # Uses source volume mounts for hot-reload via `next dev`
   web:
-    image: node:20-alpine
+    image: node:20
     working_dir: /app
     command: sh /app/infra/docker/dev-entrypoint.sh web
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       # Server-side API URL: web → api via Docker internal network
       API_URL: http://api:4000
@@ -73,10 +81,15 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:4000
       NODE_ENV: development
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:3000').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
       interval: 15s
       timeout: 5s
       retries: 10
+      start_period: 90s
     ports:
       - "3000:3000"
     volumes:
@@ -92,17 +105,19 @@ services:
   # ── Worker ────────────────────────────────────────────────────
   # Uses source volume mounts for hot-reload via `tsx watch`
   worker:
-    image: node:20-alpine
+    image: node:20
     working_dir: /app
     command: sh /app/infra/docker/dev-entrypoint.sh worker
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql://naval:naval_dev@db:5432/naval_dt
       NODE_ENV: development
     volumes:
       - .:/app
       - worker_node_modules:/app/node_modules
+      - worker_dist:/app/apps/worker/dist
       - pnpm_store:/pnpm/store
     depends_on:
       db:
@@ -112,7 +127,9 @@ services:
 volumes:
   db_data:
   api_node_modules:
+  api_dist:
   web_node_modules:
   worker_node_modules:
+  worker_dist:
   web_next:
   pnpm_store:

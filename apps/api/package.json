@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node dist/main.js",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "start:dev": "concurrently --kill-others-on-fail --names tsc,api --prefix-colors yellow,blue \"node ./scripts/watch-build.mjs\" \"node ./scripts/wait-for-build.mjs\"",
+    "start:debug": "concurrently --kill-others-on-fail --names tsc,api --prefix-colors yellow,blue \"node ./scripts/watch-build.mjs\" \"node --inspect=0.0.0.0:9229 ./scripts/wait-for-build.mjs\"",
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit"
   },
