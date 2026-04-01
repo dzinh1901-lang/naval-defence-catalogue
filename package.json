@@ -31,6 +31,7 @@
       "wouter@3.7.1": "patches/wouter@3.7.1.patch"
     },
     "overrides": {
+      "axios": ">=1.13.5",
       "tailwindcss>nanoid": "3.3.7"
     }
   }
