@@ -4,6 +4,8 @@ import { ProjectCard } from '@/components/projects/project-card';
 import { NavalLogo } from '@/components/ui/naval-logo';
 import type { Project } from '@naval/domain';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Home page — lists all projects from the live API.
  * Falls back to an empty list with an error banner if the API is unreachable.
