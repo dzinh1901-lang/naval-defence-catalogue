@@ -1,3 +1,7 @@
+// ──────────────────────────────────────────────────────────────────────────────
+// Naval Digital Twin Platform — Prisma Schema v1
+// ──────────────────────────────────────────────────────────────────────────────
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,91 +11,374 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ── Enums ──────────────────────────────────────────────────────────────────────
+
+enum OrgPlan {
+  FREE
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+  DRAFT
+}
+
+enum TwinStatus {
+  DRAFT
+  ACTIVE
+  LOCKED
+  DEPRECATED
+}
+
+enum SubsystemStatus {
+  DRAFT
+  DEFINED
+  VERIFIED
+  DEPRECATED
+}
+
+enum IfaceDirection {
+  INPUT
+  OUTPUT
+  BIDIRECTIONAL
+}
+
+enum RequirementPriority {
+  MUST
+  SHOULD
+  MAY
+}
+
+enum RequirementStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  REJECTED
+  DEPRECATED
+}
+
+enum SimulationType {
+  STATIC
+  DYNAMIC
+  MONTE_CARLO
+}
+
+enum SimRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ReviewType {
+  DESIGN
+  SAFETY
+  COMPLIANCE
+  INTERFACE
+}
+
+enum ReviewStatus {
+  OPEN
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum EvidenceType {
+  DOCUMENT
+  TEST_RESULT
+  ANALYSIS
+  SIMULATION_RESULT
+  PHOTO
+}
+
+// ── Organization & Users ────────────────────────────────────────────────────
+
 model Organization {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   name      String
-  users     User[]
-  projects  Project[]
+  slug      String   @unique
+  plan      OrgPlan  @default(FREE)
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  OrganizationMember[]
+  projects Project[]
+
+  @@index([slug])
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  roles          Role[]
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships OrganizationMember[]
+  auditEvents AuditEvent[]
+  reviews     Review[]
+
+  @@index([email])
 }
 
-model Role {
-  id   String @id @default(uuid())
-  name String
+model OrganizationMember {
+  id             String     @id @default(cuid())
+  organizationId String
+  userId         String
+  role           MemberRole @default(VIEWER)
+  joinedAt       DateTime   @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
 }
+
+// ── Projects ───────────────────────────────────────────────────────────────
 
 model Project {
-  id              String   @id @default(uuid())
-  name            String
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id])
-  twins           DigitalTwin[]
-  requirements    Requirement[]
+  id             String        @id @default(cuid())
+  name           String
+  slug           String
+  description    String?
+  status         ProjectStatus @default(ACTIVE)
+  organizationId String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  twins        DigitalTwin[]
+  requirements Requirement[]
+  reviews      Review[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([status])
 }
+
+// ── Digital Twins ──────────────────────────────────────────────────────────
 
 model DigitalTwin {
-  id         String   @id @default(uuid())
-  name       String
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  subsystems Subsystem[]
-  variants   Variant[]
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  version     String     @default("1.0.0")
+  status      TwinStatus @default(DRAFT)
+  projectId   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subsystems  Subsystem[]
+  variants    Variant[]
+  simulations Simulation[]
+
+  @@index([projectId])
+  @@index([status])
 }
+
+// ── Subsystems (hierarchical) ─────────────────────────────────────────────
 
 model Subsystem {
-  id        String   @id @default(uuid())
-  name      String
-  twinId    String
-  twin      DigitalTwin @relation(fields: [twinId], references: [id])
-  interfaces Interface[]
+  id          String          @id @default(cuid())
+  name        String
+  identifier  String
+  description String?
+  depth       Int             @default(0)
+  status      SubsystemStatus @default(DRAFT)
+  twinId      String
+  parentId    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  twin         DigitalTwin   @relation(fields: [twinId], references: [id], onDelete: Cascade)
+  parent       Subsystem?    @relation("SubsystemHierarchy", fields: [parentId], references: [id])
+  children     Subsystem[]   @relation("SubsystemHierarchy")
+  interfaces   Interface[]
+  requirements Requirement[] @relation("SubsystemRequirements")
+
+  @@index([twinId])
+  @@index([parentId])
+  @@index([identifier])
 }
+
+// ── Interfaces ────────────────────────────────────────────────────────────
 
 model Interface {
-  id          String @id @default(uuid())
+  id          String         @id @default(cuid())
   name        String
+  description String?
+  protocol    String?
+  direction   IfaceDirection @default(BIDIRECTIONAL)
   subsystemId String
-  subsystem   Subsystem @relation(fields: [subsystemId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  subsystem Subsystem @relation(fields: [subsystemId], references: [id], onDelete: Cascade)
+
+  @@index([subsystemId])
 }
+
+// ── Requirements ──────────────────────────────────────────────────────────
 
 model Requirement {
-  id        String   @id @default(uuid())
-  text      String
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
+  id          String              @id @default(cuid())
+  identifier  String
+  text        String
+  rationale   String?
+  priority    RequirementPriority @default(SHOULD)
+  status      RequirementStatus   @default(DRAFT)
+  projectId   String
+  subsystemId String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subsystem Subsystem? @relation("SubsystemRequirements", fields: [subsystemId], references: [id])
+
+  @@index([projectId])
+  @@index([subsystemId])
+  @@index([status])
+  @@index([identifier])
 }
 
-model Simulation {
-  id         String   @id @default(uuid())
-  name       String
-  twinId     String
-  twin       DigitalTwin @relation(fields: [twinId], references: [id])
-  status     String
-}
+// ── Variants ──────────────────────────────────────────────────────────────
 
 model Variant {
-  id      String   @id @default(uuid())
-  name    String
-  twinId  String
-  twin    DigitalTwin @relation(fields: [twinId], references: [id])
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isBaseline  Boolean  @default(false)
+  twinId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  twin DigitalTwin @relation(fields: [twinId], references: [id], onDelete: Cascade)
+
+  @@index([twinId])
 }
+
+// ── Simulations ───────────────────────────────────────────────────────────
+
+model Simulation {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  type        SimulationType @default(STATIC)
+  config      Json           @default("{}")
+  twinId      String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  twin DigitalTwin    @relation(fields: [twinId], references: [id], onDelete: Cascade)
+  runs SimulationRun[]
+
+  @@index([twinId])
+}
+
+model SimulationRun {
+  id           String       @id @default(cuid())
+  status       SimRunStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  result       Json?
+  errorMessage String?
+  simulationId String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  @@index([simulationId])
+  @@index([status])
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────
 
 model Review {
-  id        String   @id @default(uuid())
-  title     String
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  type        ReviewType   @default(DESIGN)
+  status      ReviewStatus @default(OPEN)
+  projectId   String
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  evidence    Evidence[]
+  attachments Attachment[]
+
+  @@index([projectId])
+  @@index([createdById])
+  @@index([status])
 }
 
+// ── Evidence ──────────────────────────────────────────────────────────────
+
 model Evidence {
-  id        String   @id @default(uuid())
-  reviewId  String
-  review    Review @relation(fields: [reviewId], references: [id])
-  uri       String
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  type        EvidenceType @default(DOCUMENT)
+  uri         String
+  reviewId    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+// ── Attachments ───────────────────────────────────────────────────────────
+
+model Attachment {
+  id         String   @id @default(cuid())
+  filename   String
+  mimeType   String
+  size       Int
+  storageKey String
+  reviewId   String?
+  createdAt  DateTime @default(now())
+
+  review Review? @relation(fields: [reviewId], references: [id])
+
+  @@index([reviewId])
+}
+
+// ── Audit Events ──────────────────────────────────────────────────────────
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  actorId   String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
