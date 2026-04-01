@@ -48,7 +48,7 @@ export function HistoryOverlay({ entries, onClose }: HistoryOverlayProps) {
                       <span className="text-text-muted"> — {entry.detail}</span>
                     )}
                     {entry.actor && (
-                      <span className="text-text-dim ml-1">· {entry.actor.name.split(' ').pop()}</span>
+                      <span className="text-text-dim ml-1">· {(entry.actor.name.split(' ').pop() ?? entry.actor.name) || entry.actor.name}</span>
                     )}
                   </div>
                 </div>

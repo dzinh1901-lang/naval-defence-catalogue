@@ -53,6 +53,7 @@ export class WorkspaceController {
   /**
    * GET /api/v1/workspace/:twinId/view-config
    * Current viewport / design-studio configuration.
+   * Returns null (200) when no config has been saved yet — callers apply defaults.
    */
   @Get(':twinId/view-config')
   @Public()
