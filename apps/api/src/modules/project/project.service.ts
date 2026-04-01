@@ -40,6 +40,9 @@ export class ProjectService {
         organization: {
           select: { id: true, name: true, slug: true },
         },
+        _count: {
+          select: { requirements: true, reviews: true },
+        },
       },
       orderBy: [{ status: 'asc' }, { name: 'asc' }],
     });
@@ -63,6 +66,9 @@ export class ProjectService {
         },
         organization: {
           select: { id: true, name: true, slug: true },
+        },
+        _count: {
+          select: { requirements: true, reviews: true },
         },
       },
     });

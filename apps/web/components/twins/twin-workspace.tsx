@@ -2,23 +2,37 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import type { Project, DigitalTwin, Subsystem, Requirement } from '@naval/domain';
+import type { Project, DigitalTwin, Subsystem, Requirement, Variant } from '@naval/domain';
 import { cn, statusDotColor } from '@/lib/utils';
 import { SubsystemTree } from './subsystem-tree';
 import { SubsystemInspector } from './subsystem-inspector';
-import { Home, Cpu, Layers } from 'lucide-react';
+import { VariantsPanel } from './variants-panel';
+import { Home, Cpu, Layers, GitBranch, PlayCircle, LayoutGrid } from 'lucide-react';
+
+type ActiveTab = 'overview' | 'variants' | 'simulations';
 
 interface TwinWorkspaceProps {
   project: Project;
   twin: DigitalTwin;
   /** Requirements for this project — fetched server-side from the API. */
   requirements?: Requirement[];
+  /** Variants for this twin — fetched server-side from the API. */
+  variants?: Variant[];
 }
 
-export function TwinWorkspace({ project, twin, requirements = [] }: TwinWorkspaceProps) {
+export function TwinWorkspace({ project, twin, requirements = [], variants = [] }: TwinWorkspaceProps) {
   const [selectedSubsystem, setSelectedSubsystem] = useState<Subsystem | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 
   const subsystems = twin.subsystems ?? [];
+  const twinVariants = variants.length > 0 ? variants : (twin.variants ?? []);
+  const twinSimulations = twin.simulations ?? [];
+
+  const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; count?: number }[] = [
+    { id: 'overview', label: 'Overview', icon: <LayoutGrid size={12} /> },
+    { id: 'variants', label: 'Variants', icon: <GitBranch size={12} />, count: twinVariants.length },
+    { id: 'simulations', label: 'Simulations', icon: <PlayCircle size={12} />, count: twinSimulations.length },
+  ];
 
   return (
     <div className="h-full flex overflow-hidden bg-surface-0">
@@ -34,7 +48,10 @@ export function TwinWorkspace({ project, twin, requirements = [] }: TwinWorkspac
           <SubsystemTree
             subsystems={subsystems}
             selectedId={selectedSubsystem?.id ?? null}
-            onSelect={setSelectedSubsystem}
+            onSelect={(s) => {
+              setSelectedSubsystem(s);
+              if (s) setActiveTab('overview');
+            }}
           />
         </div>
       </div>
@@ -66,12 +83,54 @@ export function TwinWorkspace({ project, twin, requirements = [] }: TwinWorkspac
           </div>
         </div>
 
+        {/* Tab bar */}
+        <div className="h-9 shrink-0 flex items-end px-4 gap-1 border-b border-border-subtle bg-surface-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSelectedSubsystem(null); }}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 text-2xs border-b-2 transition-colors',
+                activeTab === tab.id
+                  ? 'border-accent text-text-primary'
+                  : 'border-transparent text-text-muted hover:text-text-secondary',
+              )}
+            >
+              {tab.icon}
+              {tab.label}
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={cn(
+                  'ml-1 text-2xs rounded-full px-1 min-w-[16px] text-center',
+                  activeTab === tab.id ? 'bg-accent/20 text-accent' : 'bg-surface-2 text-text-dim',
+                )}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* Canvas content */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
-          {selectedSubsystem ? (
-            <SelectedSubsystemView subsystem={selectedSubsystem} requirements={requirements} />
-          ) : (
-            <TwinOverview twin={twin} subsystems={subsystems} />
+          {activeTab === 'overview' && (
+            selectedSubsystem ? (
+              <SelectedSubsystemView subsystem={selectedSubsystem} requirements={requirements} />
+            ) : (
+              <TwinOverview twin={twin} subsystems={subsystems} variants={twinVariants} />
+            )
+          )}
+          {activeTab === 'variants' && (
+            <div className="space-y-3 workspace-fade-in">
+              <div className="flex items-center gap-2 mb-1">
+                <GitBranch size={14} className="text-naval-teal" />
+                <h2 className="text-sm font-semibold text-text-primary">Variants</h2>
+                <span className="text-2xs text-text-muted">({twinVariants.length})</span>
+              </div>
+              <VariantsPanel variants={twinVariants} />
+            </div>
+          )}
+          {activeTab === 'simulations' && (
+            <SimulationsView simulations={twinSimulations} />
           )}
         </div>
       </div>
@@ -94,7 +153,7 @@ export function TwinWorkspace({ project, twin, requirements = [] }: TwinWorkspac
   );
 }
 
-function TwinOverview({ twin, subsystems }: { twin: DigitalTwin; subsystems: Subsystem[] }) {
+function TwinOverview({ twin, subsystems, variants }: { twin: DigitalTwin; subsystems: Subsystem[]; variants: Variant[] }) {
   return (
     <div className="space-y-4 workspace-fade-in">
       <div className="rounded-lg bg-surface-1 border border-border-subtle p-4">
@@ -105,8 +164,8 @@ function TwinOverview({ twin, subsystems }: { twin: DigitalTwin; subsystems: Sub
         <div className="mt-3 pt-3 border-t border-border-subtle grid grid-cols-3 gap-2 text-center">
           {[
             { label: 'Subsystems', value: subsystems.length },
-            { label: 'Variants', value: twin.variants?.length ?? 3 },
-            { label: 'Simulations', value: twin.simulations?.length ?? 1 },
+            { label: 'Variants', value: variants.length },
+            { label: 'Simulations', value: twin.simulations?.length ?? 0 },
           ].map((s) => (
             <div key={s.label}>
               <div className="text-lg font-bold text-text-primary font-engineering">{s.value}</div>
@@ -168,6 +227,47 @@ function SelectedSubsystemView({ subsystem, requirements }: { subsystem: Subsyst
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SimulationsView({ simulations }: { simulations: DigitalTwin['simulations'] }) {
+  const sims = simulations ?? [];
+
+  if (sims.length === 0) {
+    return (
+      <div className="workspace-fade-in flex items-center justify-center h-32 rounded-lg border border-dashed border-border text-text-muted text-sm">
+        No simulations defined
+      </div>
+    );
+  }
+
+  const typeColor: Record<string, string> = {
+    STATIC: 'text-naval-cyan bg-naval-cyan/10 border-naval-cyan/20',
+    DYNAMIC: 'text-naval-teal bg-naval-teal/10 border-naval-teal/20',
+    MONTE_CARLO: 'text-naval-indigo bg-naval-indigo/10 border-naval-indigo/20',
+  };
+
+  return (
+    <div className="space-y-3 workspace-fade-in">
+      <div className="flex items-center gap-2 mb-1">
+        <PlayCircle size={14} className="text-naval-amber" />
+        <h2 className="text-sm font-semibold text-text-primary">Simulations</h2>
+        <span className="text-2xs text-text-muted">({sims.length})</span>
+      </div>
+      {sims.map((sim) => (
+        <div key={sim.id} className="rounded-lg border border-border-subtle bg-surface-1 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={cn('text-2xs border px-1.5 py-0.5 rounded font-medium', typeColor[sim.type] ?? 'text-text-muted bg-surface-2 border-border-subtle')}>
+              {sim.type.replace('_', ' ')}
+            </span>
+          </div>
+          <h3 className="text-sm font-medium text-text-primary">{sim.name}</h3>
+          {sim.description && (
+            <p className="text-xs text-text-secondary mt-1 leading-relaxed">{sim.description}</p>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

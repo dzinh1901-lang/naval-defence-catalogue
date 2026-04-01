@@ -1,16 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import type { Project } from '@naval/domain';
-import { cn, statusDotColor } from '@/lib/utils';
-import { Cpu, FileText, GitBranch, PlayCircle, ArrowRight, Home } from 'lucide-react';
+import type { Project, Requirement, Review } from '@naval/domain';
+import { cn, statusDotColor, formatDate } from '@/lib/utils';
+import { Cpu, FileText, GitBranch, PlayCircle, ArrowRight, Home, ClipboardList, AlertCircle } from 'lucide-react';
+import { ReviewsPanel } from '@/components/reviews/reviews-panel';
 
 interface ProjectWorkspaceProps {
   project: Project;
+  requirements?: Requirement[];
+  reviews?: Review[];
 }
 
-export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
+export function ProjectWorkspace({ project, requirements = [], reviews = [] }: ProjectWorkspaceProps) {
   const twinCount = project.twins?.length ?? 0;
+  const reqCount = requirements.length;
+  const reviewCount = reviews.length;
+  // Count variants from all twins
+  const variantCount = project.twins?.reduce(
+    (sum, t) => sum + ((t as { variants?: unknown[] }).variants?.length ?? 0),
+    0,
+  ) ?? 0;
+  const openReviews = reviews.filter((r) => r.status === 'OPEN' || r.status === 'IN_REVIEW');
 
   return (
     <div className="h-full flex flex-col overflow-auto bg-surface-0">
@@ -43,9 +54,9 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: 'Digital Twins', value: twinCount, icon: <Cpu size={16} />, color: 'text-naval-cyan' },
-              { label: 'Requirements', value: project.id === 'proj-t52' ? 6 : 0, icon: <FileText size={16} />, color: 'text-naval-indigo' },
-              { label: 'Variants', value: project.id === 'proj-t52' ? 3 : 0, icon: <GitBranch size={16} />, color: 'text-naval-teal' },
-              { label: 'Simulations', value: project.id === 'proj-t52' ? 1 : 0, icon: <PlayCircle size={16} />, color: 'text-naval-amber' },
+              { label: 'Requirements', value: reqCount, icon: <FileText size={16} />, color: 'text-naval-indigo' },
+              { label: 'Variants', value: variantCount, icon: <GitBranch size={16} />, color: 'text-naval-teal' },
+              { label: 'Reviews', value: reviewCount, icon: <PlayCircle size={16} />, color: 'text-naval-amber' },
             ].map((stat) => (
               <div key={stat.label} className="rounded-lg bg-surface-1 border border-border-subtle p-3">
                 <div className={cn('mb-1', stat.color)}>{stat.icon}</div>
@@ -54,6 +65,16 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
               </div>
             ))}
           </div>
+
+          {/* Open reviews alert */}
+          {openReviews.length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-naval-amber/10 border border-naval-amber/30 px-4 py-2.5 text-xs text-naval-amber">
+              <AlertCircle size={14} />
+              <span>
+                {openReviews.length} review{openReviews.length !== 1 ? 's' : ''} require attention
+              </span>
+            </div>
+          )}
 
           {/* Digital Twins section */}
           <section>
@@ -91,6 +112,45 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                 No digital twins yet
               </div>
             )}
+          </section>
+
+          {/* Requirements section */}
+          {requirements.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  Requirements ({requirements.length})
+                </h2>
+              </div>
+              <div className="rounded-lg border border-border-subtle bg-surface-1 divide-y divide-border-subtle">
+                {requirements.slice(0, 5).map((req) => (
+                  <div key={req.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="font-mono text-2xs text-naval-cyan w-28 shrink-0">{req.identifier}</span>
+                    <span className="text-xs text-text-secondary flex-1 truncate">{req.text}</span>
+                    <span className={cn(
+                      'text-2xs shrink-0',
+                      req.priority === 'MUST' ? 'text-naval-red' : req.priority === 'SHOULD' ? 'text-naval-amber' : 'text-text-muted',
+                    )}>{req.priority}</span>
+                  </div>
+                ))}
+                {requirements.length > 5 && (
+                  <div className="px-4 py-2 text-2xs text-text-dim">
+                    +{requirements.length - 5} more requirements
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Reviews section */}
+          <section>
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardList size={13} className="text-text-muted" />
+              <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                Reviews ({reviews.length})
+              </h2>
+            </div>
+            <ReviewsPanel reviews={reviews} />
           </section>
         </div>
       </div>

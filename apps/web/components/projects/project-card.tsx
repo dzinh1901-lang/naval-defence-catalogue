@@ -22,6 +22,8 @@ const statusBg: Record<ProjectStatus, string> = {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   const twinCount = project.twins?.length ?? 0;
+  const reqCount = project._count?.requirements ?? 0;
+  const reviewCount = project._count?.reviews ?? 0;
 
   return (
     <Link
@@ -58,12 +60,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </span>
         <span className="flex items-center gap-1">
           <FileText size={11} />
-          {project.id === 'proj-t52' ? '6 reqs' : '0 reqs'}
+          {reqCount} req{reqCount !== 1 ? 's' : ''}
         </span>
-        {project.id === 'proj-t52' && (
+        {reviewCount > 0 && (
           <span className="flex items-center gap-1 text-naval-amber">
             <AlertCircle size={11} />
-            1 review
+            {reviewCount} review{reviewCount !== 1 ? 's' : ''}
           </span>
         )}
         <span className="ml-auto">{formatDate(project.createdAt)}</span>
