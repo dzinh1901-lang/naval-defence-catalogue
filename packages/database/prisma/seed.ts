@@ -518,6 +518,273 @@ async function main() {
   });
 
   console.log(`  ✔ AuditEvents: 3 seed events\n`);
+
+  // ── Workspace: Material presets ────────────────────────────────────────────
+
+  const matOak = await prisma.materialPreset.upsert({
+    where: { id: 'mat-malta-oak' },
+    update: {},
+    create: {
+      id: 'mat-malta-oak',
+      name: 'Malta Oak',
+      description: 'Warm teak-finish hull plating.',
+      colorHex: '#8B5E3C',
+    },
+  });
+
+  const matSteel = await prisma.materialPreset.upsert({
+    where: { id: 'mat-brushed-steel' },
+    update: {},
+    create: {
+      id: 'mat-brushed-steel',
+      name: 'Brushed Steel',
+      description: 'High-tensile marine-grade brushed steel.',
+      colorHex: '#A8A9AD',
+    },
+  });
+
+  const matConcrete = await prisma.materialPreset.upsert({
+    where: { id: 'mat-raw-concrete' },
+    update: {},
+    create: {
+      id: 'mat-raw-concrete',
+      name: 'Raw Concrete',
+      description: 'Exposed aggregate composite panel.',
+      colorHex: '#9EA3A8',
+    },
+  });
+
+  console.log(`  ✔ MaterialPresets: Malta Oak, Brushed Steel, Raw Concrete`);
+
+  // ── Workspace: Lighting presets ────────────────────────────────────────────
+
+  const lightGolden = await prisma.lightingPreset.upsert({
+    where: { id: 'light-golden-hour' },
+    update: {},
+    create: {
+      id: 'light-golden-hour',
+      name: 'Golden Hour',
+      description: 'Warm dusk lighting for visual identity renders.',
+      intensity: 0.85,
+    },
+  });
+
+  const lightMidnight = await prisma.lightingPreset.upsert({
+    where: { id: 'light-midnight-stealth' },
+    update: {},
+    create: {
+      id: 'light-midnight-stealth',
+      name: 'Midnight Stealth',
+      description: 'Zero-emission low-visibility night profile.',
+      intensity: 0.2,
+    },
+  });
+
+  const lightScandi = await prisma.lightingPreset.upsert({
+    where: { id: 'light-scandinavian-natural' },
+    update: {},
+    create: {
+      id: 'light-scandinavian-natural',
+      name: 'Scandinavian Natural',
+      description: 'Cool northern overcast daylight.',
+      intensity: 1.0,
+    },
+  });
+
+  console.log(`  ✔ LightingPresets: Golden Hour, Midnight Stealth, Scandinavian Natural`);
+
+  // ── Workspace: View config ─────────────────────────────────────────────────
+
+  await prisma.workspaceViewConfig.upsert({
+    where: { twinId: frigateTwin.id },
+    update: {},
+    create: {
+      twinId: frigateTwin.id,
+      selectedMaterialId: matSteel.id,
+      selectedLightingId: lightGolden.id,
+      camDof: 3.0,
+      camFstop: 30,
+    },
+  });
+
+  console.log(`  ✔ WorkspaceViewConfig: Brushed Steel + Golden Hour, DoF=3.0 F30`);
+
+  // ── Workspace: Viewport hotspots ──────────────────────────────────────────
+
+  await prisma.viewportHotspot.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: 'hs-radar',
+        twinId: frigateTwin.id,
+        label: 'APAR Radar',
+        description: 'S-band active phased array radar — horizon and volume search.',
+        subsystemId: 'ss-radar',
+        posX: 43,
+        posY: 32,
+      },
+      {
+        id: 'hs-bridge',
+        twinId: frigateTwin.id,
+        label: 'Bridge / CMS',
+        description: 'Combat Management System operator consoles.',
+        subsystemId: 'ss-combat',
+        posX: 52,
+        posY: 52,
+      },
+      {
+        id: 'hs-vls',
+        twinId: frigateTwin.id,
+        label: 'VLS Cells',
+        description: 'Sylver A50 vertical launch system — 48 cells.',
+        subsystemId: 'ss-weapons',
+        posX: 30,
+        posY: 62,
+      },
+      {
+        id: 'hs-propulsion',
+        twinId: frigateTwin.id,
+        label: 'Propulsion',
+        description: 'CODLAG plant — gas turbines and electric drives.',
+        subsystemId: 'ss-propulsion',
+        posX: 68,
+        posY: 68,
+      },
+      {
+        id: 'hs-sonar',
+        twinId: frigateTwin.id,
+        label: 'Hull Sonar',
+        description: 'Medium-frequency hull-mounted sonar.',
+        subsystemId: 'ss-sonar',
+        posX: 22,
+        posY: 72,
+      },
+    ],
+  });
+
+  console.log(`  ✔ ViewportHotspots: 5 hotspots (radar, bridge, VLS, propulsion, sonar)`);
+
+  // ── Workspace: Alert events ───────────────────────────────────────────────
+
+  await prisma.alertEvent.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: 'alert-001',
+        twinId: frigateTwin.id,
+        title: 'Critical Alerts',
+        message: 'Sonar Status Active — bearing 247° unidentified contact.',
+        severity: 'CRITICAL',
+      },
+      {
+        id: 'alert-002',
+        twinId: frigateTwin.id,
+        title: 'Critical Alerts',
+        message: `Coord: 43.17° N, 7.42° E — propulsion temperature threshold exceeded.`,
+        severity: 'CRITICAL',
+      },
+      {
+        id: 'alert-003',
+        twinId: frigateTwin.id,
+        title: 'Structural Stress Warning',
+        message: 'Frame 48–52 stress sensor above 85% threshold at current heading.',
+        severity: 'WARNING',
+      },
+      {
+        id: 'alert-004',
+        twinId: frigateTwin.id,
+        title: 'Link-16 Degraded',
+        message: 'Data link uplink quality below 60% — check antenna alignment.',
+        severity: 'WARNING',
+        resolvedAt: new Date('2025-12-01T08:00:00Z'),
+      },
+      {
+        id: 'alert-005',
+        twinId: frigateTwin.id,
+        title: 'Simulation Result Available',
+        message: 'Propulsion envelope run #3 completed — review output data.',
+        severity: 'INFO',
+        resolvedAt: new Date('2025-12-01T09:00:00Z'),
+      },
+    ],
+  });
+
+  console.log(`  ✔ AlertEvents: 5 alerts (2 critical, 2 warning, 1 info)`);
+
+  // ── Workspace: Activity log ───────────────────────────────────────────────
+
+  await prisma.twinActivityLog.createMany({
+    skipDuplicates: true,
+    data: [
+      {
+        id: 'log-001',
+        twinId: frigateTwin.id,
+        actorId: engineerUser.id,
+        action: 'Structural decimation updated',
+        detail: 'Frame mesh reduced 40% — no fidelity loss at system boundary.',
+        version: 'v2.41',
+      },
+      {
+        id: 'log-002',
+        twinId: frigateTwin.id,
+        actorId: engineerUser.id,
+        action: 'Structural decimation updated',
+        detail: 'Secondary hull sections re-meshed for simulation performance.',
+        version: 'v2.41',
+      },
+      {
+        id: 'log-003',
+        twinId: frigateTwin.id,
+        actorId: analystUser.id,
+        action: 'Structural users updated',
+        detail: 'Access permissions aligned with PDR gate checklist.',
+        version: 'v2.41',
+      },
+      {
+        id: 'log-004',
+        twinId: frigateTwin.id,
+        actorId: adminUser.id,
+        action: 'Structural events updated',
+        detail: 'Event timeline synced to simulation run schedule.',
+        version: 'v2.41',
+      },
+      {
+        id: 'log-005',
+        twinId: frigateTwin.id,
+        actorId: engineerUser.id,
+        action: 'Structural new updated',
+        detail: 'Added forward deck geometry from revised hull lines.',
+        version: 'v2.41',
+      },
+      {
+        id: 'log-006',
+        twinId: frigateTwin.id,
+        actorId: engineerUser.id,
+        action: 'Structural decimation updated',
+        detail: 'Superstructure mesh optimised for render export.',
+        version: 'v2.41',
+      },
+      {
+        id: 'log-007',
+        twinId: frigateTwin.id,
+        actorId: analystUser.id,
+        action: 'REQ-003 status updated',
+        detail: 'Acoustic requirement moved to REVIEW — evidence package submitted.',
+        version: 'v2.40',
+      },
+      {
+        id: 'log-008',
+        twinId: frigateTwin.id,
+        actorId: adminUser.id,
+        action: 'Design review opened',
+        detail: 'PDR for CMS architecture initiated.',
+        version: 'v2.39',
+      },
+    ],
+  });
+
+  console.log(`  ✔ TwinActivityLog: 8 activity entries\n`);
+
   console.log('✅  Seed complete.\n');
 }
 

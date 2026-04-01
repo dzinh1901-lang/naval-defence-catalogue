@@ -17,6 +17,12 @@ import type {
   Variant,
   Review,
   Evidence,
+  WorkspaceSummary,
+  ViewportHotspot,
+  AlertEvent,
+  TwinActivityLog,
+  WorkspaceViewConfig,
+  UpdateViewConfigDto,
 } from '@naval/domain';
 
 // ── Base config ──────────────────────────────────────────────────────────────
@@ -165,4 +171,55 @@ export async function getReview(id: string): Promise<Review | null> {
 /** List evidence for a review. */
 export async function listEvidence(reviewId: string): Promise<Evidence[]> {
   return apiFetch<Evidence[]>(`/evidence/review/${reviewId}`);
+}
+
+// ── Workspace ─────────────────────────────────────────────────────────────────
+
+/** GET /workspace/:twinId — workspace summary */
+export async function getWorkspaceSummary(twinId: string): Promise<WorkspaceSummary | null> {
+  try {
+    return await apiFetch<WorkspaceSummary>(`/workspace/${twinId}`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+/** GET /workspace/:twinId/hotspots */
+export async function getWorkspaceHotspots(twinId: string): Promise<ViewportHotspot[]> {
+  return apiFetch<ViewportHotspot[]>(`/workspace/${twinId}/hotspots`);
+}
+
+/** GET /workspace/:twinId/alerts */
+export async function getWorkspaceAlerts(twinId: string): Promise<AlertEvent[]> {
+  return apiFetch<AlertEvent[]>(`/workspace/${twinId}/alerts`);
+}
+
+/** GET /workspace/:twinId/history */
+export async function getWorkspaceHistory(twinId: string): Promise<TwinActivityLog[]> {
+  return apiFetch<TwinActivityLog[]>(`/workspace/${twinId}/history`);
+}
+
+/** GET /workspace/:twinId/view-config */
+export async function getWorkspaceViewConfig(twinId: string): Promise<WorkspaceViewConfig | null> {
+  try {
+    return await apiFetch<WorkspaceViewConfig>(`/workspace/${twinId}/view-config`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+/** PATCH /workspace/:twinId/view-config — client-side mutation */
+export async function updateWorkspaceViewConfig(
+  twinId: string,
+  dto: UpdateViewConfigDto,
+): Promise<WorkspaceViewConfig> {
+  return apiFetch<WorkspaceViewConfig>(`/workspace/${twinId}/view-config`, {
+    method: 'PATCH',
+    headers: { Authorization: 'Bearer dev-token' },
+    body: JSON.stringify(dto),
+    // Disable Next.js cache for mutations.
+    cache: 'no-store',
+  });
 }

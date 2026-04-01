@@ -104,6 +104,12 @@ enum EvidenceType {
   PHOTO
 }
 
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 // ── Organization & Users ────────────────────────────────────────────────────
 
 model Organization {
@@ -135,6 +141,7 @@ model User {
   auditEvents        AuditEvent[]
   reviews            Review[]
   simulationRuns     SimulationRun[]
+  activityLogs       TwinActivityLog[]
 
   @@index([email])
 }
@@ -212,6 +219,10 @@ model DigitalTwin {
   subsystems  Subsystem[]
   variants    Variant[]
   simulations Simulation[]
+  viewConfig  WorkspaceViewConfig?
+  hotspots    ViewportHotspot[]
+  alerts      AlertEvent[]
+  activityLog TwinActivityLog[]
 
   @@index([projectId])
   @@index([status])
@@ -239,6 +250,7 @@ model Subsystem {
   children     Subsystem[]   @relation("SubsystemHierarchy")
   interfaces   Interface[]
   requirements Requirement[] @relation("SubsystemRequirements")
+  hotspots     ViewportHotspot[]
 
   @@index([twinId])
   @@index([parentId])
@@ -417,5 +429,102 @@ model AuditEvent {
 
   @@index([actorId])
   @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ── Workspace ─────────────────────────────────────────────────────────────────
+
+model MaterialPreset {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  thumbnailUrl String?
+  colorHex     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  viewConfigs WorkspaceViewConfig[]
+
+  @@index([name])
+}
+
+model LightingPreset {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  thumbnailUrl String?
+  intensity    Float    @default(1.0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  viewConfigs WorkspaceViewConfig[]
+
+  @@index([name])
+}
+
+model WorkspaceViewConfig {
+  id                 String   @id @default(cuid())
+  twinId             String   @unique
+  selectedMaterialId String?
+  selectedLightingId String?
+  camDof             Float    @default(3.0)
+  camFstop           Float    @default(30.0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  twin             DigitalTwin     @relation(fields: [twinId], references: [id], onDelete: Cascade)
+  selectedMaterial MaterialPreset? @relation(fields: [selectedMaterialId], references: [id])
+  selectedLighting LightingPreset? @relation(fields: [selectedLightingId], references: [id])
+
+  @@index([twinId])
+}
+
+model ViewportHotspot {
+  id          String   @id @default(cuid())
+  twinId      String
+  label       String
+  description String?
+  subsystemId String?
+  posX        Float
+  posY        Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  twin      DigitalTwin @relation(fields: [twinId], references: [id], onDelete: Cascade)
+  subsystem Subsystem?  @relation(fields: [subsystemId], references: [id])
+
+  @@index([twinId])
+}
+
+model AlertEvent {
+  id         String        @id @default(cuid())
+  twinId     String
+  title      String
+  message    String?
+  severity   AlertSeverity @default(INFO)
+  resolvedAt DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  twin DigitalTwin @relation(fields: [twinId], references: [id], onDelete: Cascade)
+
+  @@index([twinId])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model TwinActivityLog {
+  id        String   @id @default(cuid())
+  twinId    String
+  actorId   String?
+  action    String
+  detail    String?
+  version   String?
+  createdAt DateTime @default(now())
+
+  twin  DigitalTwin @relation(fields: [twinId], references: [id], onDelete: Cascade)
+  actor User?       @relation(fields: [actorId], references: [id])
+
+  @@index([twinId])
   @@index([createdAt])
 }
