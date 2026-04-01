@@ -11,6 +11,7 @@ import { EvidenceModule } from './modules/evidence/evidence.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { VariantModule } from './modules/variant/variant.module';
 import { SimulationModule } from './modules/simulation/simulation.module';
+import { IntelligenceModule } from './modules/intelligence/intelligence.module';
 import { AuthGuard } from './common/guards/auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -27,6 +28,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     EvidenceModule,
     VariantModule,
     SimulationModule,
+    IntelligenceModule,
   ],
   providers: [
     // Global authentication guard — runs on every request.

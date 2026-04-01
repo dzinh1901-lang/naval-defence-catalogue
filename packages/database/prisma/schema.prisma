@@ -1,14 +1,16 @@
 // ──────────────────────────────────────────────────────────────────────────────
-// Naval Digital Twin Platform — Prisma Schema v1
+// Naval Digital Twin Platform — Prisma Schema v2
 // ──────────────────────────────────────────────────────────────────────────────
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
 }
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
@@ -226,6 +228,9 @@ model Subsystem {
   status      SubsystemStatus @default(DRAFT)
   twinId      String
   parentId    String?
+  /// pgvector embedding (1 536-dim) for RAG semantic search. Populated by the
+  /// intelligence worker when subsystem text is indexed.
+  embedding   Unsupported("vector(1536)")?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -289,6 +294,9 @@ model Variant {
   isBaseline    Boolean  @default(false)
   configuration Json     @default("{}")
   twinId        String
+  /// pgvector embedding (1 536-dim) for RAG semantic search. Populated by the
+  /// intelligence worker when variant text is indexed.
+  embedding     Unsupported("vector(1536)")?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -367,6 +375,9 @@ model Evidence {
   type        EvidenceType @default(DOCUMENT)
   uri         String
   reviewId    String
+  /// pgvector embedding (1 536-dim) for RAG semantic search. Populated by the
+  /// intelligence worker when evidence text is indexed.
+  embedding   Unsupported("vector(1536)")?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
