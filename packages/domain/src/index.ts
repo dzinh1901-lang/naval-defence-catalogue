@@ -136,6 +136,7 @@ export interface Project extends BaseEntity {
   organization?: Organization;
   twins?: DigitalTwin[];
   members?: ProjectMember[];
+  _count?: { requirements: number; reviews: number };
 }
 
 // ── Project Membership ─────────────────────────────────────────

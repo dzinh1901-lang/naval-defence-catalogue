@@ -8,6 +8,7 @@ import { RequirementModule } from './modules/requirement/requirement.module';
 import { ReviewModule } from './modules/review/review.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { VariantModule } from './modules/variant/variant.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AuthModule } from './modules/auth/auth.module';
     RequirementModule,
     ReviewModule,
     EvidenceModule,
+    VariantModule,
   ],
 })
 export class AppModule {}

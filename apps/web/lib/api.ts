@@ -14,6 +14,9 @@ import type {
   DigitalTwin,
   Subsystem,
   Requirement,
+  Variant,
+  Review,
+  Evidence,
 } from '@naval/domain';
 
 // ── Base config ──────────────────────────────────────────────────────────────
@@ -131,4 +134,35 @@ export async function listRequirements(
   if (opts?.subsystemId !== undefined) params.set('subsystemId', opts.subsystemId);
   const qs = params.toString() ? `?${params}` : '';
   return apiFetch<Requirement[]>(`/requirements/project/${projectId}${qs}`);
+}
+
+// ── Variants ──────────────────────────────────────────────────────────────────
+
+/** List variants for a digital twin. */
+export async function listVariants(twinId: string): Promise<Variant[]> {
+  return apiFetch<Variant[]>(`/variants/twin/${twinId}`);
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+/** List reviews for a project. */
+export async function listReviews(projectId: string): Promise<Review[]> {
+  return apiFetch<Review[]>(`/reviews/project/${projectId}`);
+}
+
+/** Get a single review by ID. */
+export async function getReview(id: string): Promise<Review | null> {
+  try {
+    return await apiFetch<Review>(`/reviews/${id}`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+// ── Evidence ──────────────────────────────────────────────────────────────────
+
+/** List evidence for a review. */
+export async function listEvidence(reviewId: string): Promise<Evidence[]> {
+  return apiFetch<Evidence[]>(`/evidence/review/${reviewId}`);
 }

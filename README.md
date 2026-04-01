@@ -141,8 +141,15 @@ PATCH /api/v1/subsystems/:id           Update subsystem
 DELETE /api/v1/subsystems/:id          Delete subsystem
 GET  /api/v1/requirements/project/:id  List requirements for a project (optional ?subsystemId=)
 POST /api/v1/requirements              Create requirement
-GET  /api/v1/reviews/project/:id       List reviews
+GET  /api/v1/variants/twin/:id         List variants for a twin
+POST /api/v1/variants                  Create variant
+GET  /api/v1/variants/:id              Get a variant
+PATCH /api/v1/variants/:id             Update variant
+DELETE /api/v1/variants/:id            Delete variant
+GET  /api/v1/reviews/project/:id       List reviews (includes evidence and creator)
 POST /api/v1/reviews                   Create review
+GET  /api/v1/reviews/:id               Get a review
+PATCH /api/v1/reviews/:id              Update review status
 GET  /api/v1/evidence/review/:id       List evidence for a review
 POST /api/v1/evidence                  Create evidence
 ```
@@ -191,13 +198,13 @@ Real JWT verification (passport-jwt / @nestjs/passport) is planned for Milestone
 | Data source        | Status                                          |
 |--------------------|-------------------------------------------------|
 | Project list       | Live -- loaded from API (`/api/v1/projects`)    |
-| Project workspace  | Live -- loaded from API                         |
+| Project workspace  | Live -- loaded from API (live counts)           |
 | Twin workspace     | Live -- subsystem tree loaded from API          |
 | Requirements       | Live -- loaded from API per project             |
 | Subsystem inspect  | Live -- loaded from API                         |
-| Variants           | API-backed (includes `configuration` JSON)      |
+| Variants           | Live -- API-backed with configuration JSON UI   |
 | Simulations        | Seed data only -- orchestration in M4           |
-| Reviews/Evidence   | Seed data only -- review workflows in M3        |
+| Reviews/Evidence   | Live -- review list with evidence in project    |
 
 ---
 
@@ -217,8 +224,8 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 
 1. **M1** -- Foundation: monorepo, schema v1, workspace shell, API baseline (done)
 2. **M2** -- Auth foundation, project membership, live API vertical slice (done)
-3. **M3** -- JWT auth, RBAC enforcement, variant management, review workflows
-4. **M4** -- Simulation orchestration and result ingestion
+3. **M3** -- Variant management UI, review workflows, live counts (done)
+4. **M4** -- JWT auth, RBAC enforcement, simulation orchestration
 5. **M5** -- Multi-tenant SaaS hardening, observability
 6. **M6** -- Kubernetes deployment, staging/production CI/CD
 
