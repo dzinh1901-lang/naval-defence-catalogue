@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('projects')
 export class ProjectController {
@@ -16,9 +17,10 @@ export class ProjectController {
 
   /**
    * POST /api/v1/projects
-   * Create a new project.
+   * Create a new project. Requires MEMBER or ADMIN role.
    */
   @Post()
+  @Roles('MEMBER', 'ADMIN')
   create(@Body() dto: CreateProjectDto) {
     return this.service.create(dto);
   }

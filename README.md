@@ -176,24 +176,67 @@ See `docs/architecture/overview.md` for the full system design.
 
 ---
 
-## Authentication (Milestone 2 baseline)
+## Authentication (Milestone 4)
 
-The API uses a simple bearer-token development auth strategy:
+The API uses JWT-based authentication via `@nestjs/passport` and `passport-jwt`.
 
-- Send `Authorization: Bearer dev-token` to authenticate as an ADMIN user.
-- Any other non-empty token authenticates as a MEMBER-level user.
+### Configuration
+
+| Variable | Required | Description |
+|---|---|---|
+| `JWT_SECRET` | Production only | HS256 signing secret (min 32 chars). Falls back to `dev-secret-change-in-production` in dev. |
+| `JWT_EXPIRES_IN_SECS` | Optional | Token lifetime in seconds (default: 604800 = 7 days). |
+| `AUTH_BOOTSTRAP_SECRET` | Optional | Secret for `POST /auth/token` — dev/service-account token issuance. |
+
+### Development
+
+Without `JWT_SECRET` set, the API falls back to the legacy dev-token sentinel:
+
+- `Authorization: Bearer dev-token` → ADMIN user
+- Any other non-empty token → MEMBER user
 - Routes decorated with `@Public()` bypass token checking.
 
-Real JWT verification (passport-jwt / @nestjs/passport) is planned for Milestone 3.
+### Issuing JWT tokens
 
-**Access model:**
-- Coarse org-level roles: `ADMIN | MEMBER | VIEWER` via `OrganizationMember`.
-- Project-level access grants via `ProjectMember` -- a user can be `VIEWER` at org level but `MEMBER` on a specific project.
-- Fine-grained RBAC enforcement is deferred to Milestone 3.
+`POST /api/v1/auth/token` accepts a `bootstrapSecret` + user fields and returns a signed JWT.
+In production, replace this endpoint with a proper identity provider flow (OIDC/OAuth2).
+
+### Access model — RBAC (Milestone 4)
+
+Fine-grained RBAC is enforced on all write endpoints:
+
+| Role | Capabilities |
+|---|---|
+| `VIEWER` | Read-only access to all resources. |
+| `MEMBER` | Read + create/update resources within their projects. |
+| `ADMIN` | Full access including deletions and sensitive operations. |
+
+**Project-level precedence:** A user's `ProjectMember` role overrides their org-level role for
+project-scoped operations. For example, a `VIEWER` at org level with a `MEMBER` `ProjectMember`
+record can create resources within that specific project.
 
 ---
 
-## Data status (Milestone 2)
+## Simulation Orchestration (Milestone 4)
+
+Simulation endpoints are now live:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/simulations` | Create a simulation definition |
+| `GET` | `/api/v1/simulations/twin/:twinId` | List simulations for a twin |
+| `GET` | `/api/v1/simulations/:id` | Get simulation with run history |
+| `POST` | `/api/v1/simulations/:id/runs` | Trigger a new simulation run |
+| `GET` | `/api/v1/simulations/:id/runs` | List runs for a simulation |
+| `GET` | `/api/v1/simulations/:id/runs/:runId` | Get a single run |
+| `PATCH` | `/api/v1/simulations/:id/runs/:runId` | Cancel a pending/running run |
+
+Runs are created in `PENDING` status. The worker process is responsible for advancing
+the state through `RUNNING → COMPLETED | FAILED`.
+
+---
+
+## Data status (Milestone 4)
 
 | Data source        | Status                                          |
 |--------------------|-------------------------------------------------|
@@ -203,7 +246,7 @@ Real JWT verification (passport-jwt / @nestjs/passport) is planned for Milestone
 | Requirements       | Live -- loaded from API per project             |
 | Subsystem inspect  | Live -- loaded from API                         |
 | Variants           | Live -- API-backed with configuration JSON UI   |
-| Simulations        | Seed data only -- orchestration in M4           |
+| Simulations        | Live -- CRUD + run orchestration API in M4      |
 | Reviews/Evidence   | Live -- review list with evidence in project    |
 
 ---

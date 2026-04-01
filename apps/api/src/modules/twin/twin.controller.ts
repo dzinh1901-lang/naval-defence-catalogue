@@ -1,6 +1,7 @@
 import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
 import { TwinService } from './twin.service';
 import { CreateTwinDto } from './dto/create-twin.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('twins')
 export class TwinController {
@@ -8,9 +9,10 @@ export class TwinController {
 
   /**
    * POST /api/v1/twins
-   * Create a new digital twin.
+   * Create a new digital twin. Requires MEMBER or ADMIN role.
    */
   @Post()
+  @Roles('MEMBER', 'ADMIN')
   create(@Body() dto: CreateTwinDto) {
     return this.service.create(dto);
   }
