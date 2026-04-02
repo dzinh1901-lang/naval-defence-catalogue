@@ -1,6 +1,12 @@
 name: Deploy – Production
 
 on:
+  workflow_call:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       image_tag:
@@ -35,9 +41,9 @@ jobs:
 
       - name: Pull images
         run: |
-          docker pull ghcr.io/${{ github.repository_owner }}/naval-api:${{ github.event.inputs.image_tag }}
-          docker pull ghcr.io/${{ github.repository_owner }}/naval-web:${{ github.event.inputs.image_tag }}
-          docker pull ghcr.io/${{ github.repository_owner }}/naval-worker:${{ github.event.inputs.image_tag }}
+          docker pull ghcr.io/${{ github.repository_owner }}/naval-api:${{ inputs.image_tag }}
+          docker pull ghcr.io/${{ github.repository_owner }}/naval-web:${{ inputs.image_tag }}
+          docker pull ghcr.io/${{ github.repository_owner }}/naval-worker:${{ inputs.image_tag }}
 
       - name: Run database migrations
         env:
@@ -45,7 +51,7 @@ jobs:
         run: |
           docker run --rm \
             -e DATABASE_URL="${DATABASE_URL}" \
-            ghcr.io/${{ github.repository_owner }}/naval-api:${{ github.event.inputs.image_tag }} \
+            ghcr.io/${{ github.repository_owner }}/naval-api:${{ inputs.image_tag }} \
             node -e "require('./apps/api/scripts/migrate-deploy.mjs')"
 
       - name: Deploy services
@@ -55,7 +61,7 @@ jobs:
           if [ -n "${DEPLOY_HOOK_URL}" ]; then
             curl -fsSL -X POST "${DEPLOY_HOOK_URL}" \
               -H "Content-Type: application/json" \
-              -d "{\"tag\": \"${{ github.event.inputs.image_tag }}\"}"
+              -d "{\"tag\": \"${{ inputs.image_tag }}\"}"
           else
             echo "No PRODUCTION_DEPLOY_HOOK_URL secret set – skipping remote deploy hook."
             echo "Configure PRODUCTION_DEPLOY_HOOK_URL in the production environment secrets to automate deployment."

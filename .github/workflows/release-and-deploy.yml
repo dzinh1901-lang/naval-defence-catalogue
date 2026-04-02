@@ -1,0 +1,90 @@
+name: Release & Deploy
+
+# Unified tag-push pipeline:
+#   1. Build and push Docker images to GHCR
+#   2. Create a GitHub release with auto-generated notes
+#   3. Run database migrations and deploy to the staging environment
+#   4. Wait for a required reviewer approval on the production environment
+#   5. Run database migrations and deploy to the production environment
+#
+# Required repository secrets / environment variables:
+#   STAGING_DEPLOY_HOOK_URL    (staging env secret)  – Webhook to trigger staging host re-pull
+#   PRODUCTION_DEPLOY_HOOK_URL (production env secret) – Webhook to trigger production host re-pull
+#   DATABASE_URL               (staging / production env secret) – Postgres connection string for migrations
+#   AUTH_BOOTSTRAP_SECRET      (staging / production env secret) – API auth for post-deploy verification
+#   DEPLOYMENT_VERIFY_API_URL  (staging / production env var)   – API base URL for health checks
+#   DEPLOYMENT_VERIFY_WEB_URL  (staging / production env var)   – Web base URL for health checks
+#
+# Optional GitHub App token (enables elevated permissions or cross-repo actions):
+#   GITHUB_APP_PRIVATE_KEY     (repository secret) – PEM private key for the GitHub App
+#   GITHUB_APP_ID              (repository variable) – GitHub App ID (numeric string)
+#   If GITHUB_APP_ID variable is unset the workflow falls back to the standard GITHUB_TOKEN.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-and-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # ── 1. Build & push Docker images ─────────────────────────────────────────
+  build-images:
+    name: Build & push Docker images
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit
+
+  # ── 2. Create GitHub release ──────────────────────────────────────────────
+  github-release:
+    name: Create GitHub Release
+    needs: build-images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Generate a GitHub App token for elevated permissions (optional).
+      # Falls back to the default GITHUB_TOKEN if GITHUB_APP_ID is not configured.
+      - name: Generate GitHub App token
+        id: app-token
+        if: ${{ vars.GITHUB_APP_ID != '' }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          make_latest: true
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+  # ── 3. Deploy to staging ──────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to staging
+    needs: github-release
+    uses: ./.github/workflows/deploy-staging.yml
+    with:
+      image_tag: ${{ github.ref_name }}
+    secrets: inherit
+
+  # ── 4. Deploy to production (gated by environment protection rules) ───────
+  deploy-production:
+    name: Deploy to production
+    needs: deploy-staging
+    uses: ./.github/workflows/deploy-production.yml
+    with:
+      image_tag: ${{ github.ref_name }}
+    secrets: inherit

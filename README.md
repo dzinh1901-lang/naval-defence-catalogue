@@ -371,6 +371,68 @@ See `legacy/README.md` and `docs/architecture/migration.md` for the migration st
 
 ---
 
+## CI/CD pipeline
+
+### Overview
+
+Tag a release to trigger the full deployment pipeline:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The `release-and-deploy.yml` workflow runs automatically on every `v*.*.*` tag and orchestrates these stages in order:
+
+| Stage | Workflow | Description |
+|---|---|---|
+| Build images | `docker.yml` | Builds and pushes `naval-api`, `naval-web`, and `naval-worker` to GHCR |
+| Create release | inline | Creates a GitHub Release with auto-generated notes |
+| Deploy staging | `deploy-staging.yml` | Runs migrations, fires the staging deploy hook, verifies health |
+| Approve production | — | Pauses until a required reviewer approves the `production` environment |
+| Deploy production | `deploy-production.yml` | Runs migrations, fires the production deploy hook, verifies health |
+
+Individual workflows (`docker.yml`, `deploy-staging.yml`, `deploy-production.yml`) can still be triggered manually via `workflow_dispatch` for ad-hoc use.
+
+### Required secrets and variables
+
+Configure the following in **Settings → Environments** and **Settings → Secrets and variables**:
+
+#### `staging` environment
+
+| Name | Type | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Secret | Postgres connection string used by `prisma migrate deploy` |
+| `STAGING_DEPLOY_HOOK_URL` | Secret | Webhook URL to trigger the staging host to re-pull images |
+| `AUTH_BOOTSTRAP_SECRET` | Secret | Bootstrap secret for post-deploy API auth verification |
+| `DEPLOYMENT_VERIFY_API_URL` | Variable | API base URL for health checks (e.g. `https://staging-api.example.com`) |
+| `DEPLOYMENT_VERIFY_WEB_URL` | Variable | Web base URL for health checks (e.g. `https://staging.example.com`) |
+
+#### `production` environment
+
+| Name | Type | Purpose |
+|---|---|---|
+| `DATABASE_URL` | Secret | Postgres connection string used by `prisma migrate deploy` |
+| `PRODUCTION_DEPLOY_HOOK_URL` | Secret | Webhook URL to trigger the production host to re-pull images |
+| `AUTH_BOOTSTRAP_SECRET` | Secret | Bootstrap secret for post-deploy API auth verification |
+| `DEPLOYMENT_VERIFY_API_URL` | Variable | API base URL for health checks |
+| `DEPLOYMENT_VERIFY_WEB_URL` | Variable | Web base URL for health checks |
+
+#### Repository-level (optional — GitHub App integration)
+
+| Name | Type | Purpose |
+|---|---|---|
+| `GITHUB_APP_PRIVATE_KEY` | Secret | PEM private key of your GitHub App (enables elevated-permission tokens) |
+| `GITHUB_APP_ID` | Variable | Numeric App ID of your GitHub App |
+
+When `GITHUB_APP_ID` is set, the release stage generates a short-lived installation token via `actions/create-github-app-token` and uses it instead of the default `GITHUB_TOKEN`. Leave both unset to use the built-in `GITHUB_TOKEN`.
+
+### Production environment protection
+
+Add **required reviewers** to the `production` GitHub environment (Settings → Environments → production → Protection rules). The pipeline automatically pauses after staging deployment until an approved reviewer clicks **Review deployments** in the Actions UI.
+
+---
+
 ## Delivery phases
 
 1. **M1** -- Foundation: monorepo, schema v1, workspace shell, API baseline (done)
