@@ -13,6 +13,7 @@
     "build:web": "pnpm --filter @naval/web build",
     "build:api": "pnpm --filter @naval/api build",
     "typecheck": "pnpm -r --filter './apps/*' --filter './packages/*' typecheck",
+    "test": "node ./scripts/run-tests.mjs",
     "verify:artifacts": "node ./scripts/verify-build-artifacts.mjs",
     "verify:deployment": "node ./scripts/verify-deployment.mjs",
     "verify": "pnpm lint && pnpm db:validate && pnpm db:generate && pnpm typecheck && pnpm build && pnpm verify:artifacts",
