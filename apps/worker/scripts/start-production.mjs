@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url';
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const entrypoint = path.join(appDir, '..', 'dist', 'index.js');
 
+function formatDatabaseTarget(connectionString) {
+  const parsed = new URL(connectionString);
+  return `${parsed.hostname}:${parsed.port || '5432'}${parsed.pathname}`;
+}
+
 function readRequiredEnv(name) {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -22,7 +27,14 @@ async function main() {
     );
   });
 
-  readRequiredEnv('DATABASE_URL');
+  const databaseUrl = readRequiredEnv('DATABASE_URL');
+  console.log(
+    `[worker] Launching production runtime ${JSON.stringify({
+      environment: process.env['NODE_ENV'] ?? 'production',
+      databaseTarget: formatDatabaseTarget(databaseUrl),
+      readyFile: process.env['WORKER_READY_FILE']?.trim() || 'disabled',
+    })}`,
+  );
 
   const child = spawn(process.execPath, [entrypoint], {
     stdio: 'inherit',

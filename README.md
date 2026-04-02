@@ -132,6 +132,7 @@ pnpm db:studio      # Open Prisma Studio in browser
 # Verification
 pnpm verify         # Lint + Prisma validate/generate + typecheck + build + artifact checks
 pnpm smoke:http     # HTTP smoke test for local API/web
+pnpm verify:deployment  # Verify a deployed staging/prod environment via URLs + auth
 
 # Build
 pnpm build          # Build all apps and packages
@@ -307,13 +308,16 @@ pnpm smoke:production
 2. Apply committed Prisma migrations with `pnpm db:migrate:deploy`.
 3. Confirm `JWT_SECRET`, `API_URL`, `NEXT_PUBLIC_API_URL`, and either `API_AUTH_TOKEN` or `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*` are set.
 4. Smoke-test:
-    - `GET /api/v1/health`
+    - `GET /api/v1/health/live`
+    - `GET /api/v1/health/ready`
     - `GET /api/v1/auth/me` with missing, invalid, expired, and valid auth
     - `GET /api/v1/projects` with a valid bearer token
-    - Web homepage and a seeded project route render live project data
+    - Web homepage plus seeded project/twin routes render live project data
+    - Web workspace proxy can persist `/api/workspace/:twinId/view-config`
     - Worker starts, reaches database readiness, and reports healthy
 
 See `docs/release-notes/production-smoke-hardening.md` for rollout-focused notes, rollback guidance, and follow-up items.
+See `docs/deployment-readiness.md` for the explicit env contract, staging verification workflow, migration order, rollback expectations, and operator troubleshooting.
 
 ---
 

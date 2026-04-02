@@ -23,13 +23,28 @@ function getFirstConfiguredValue(...values: Array<string | undefined>): string |
   return values.find((value) => value && value.trim().length > 0)?.trim();
 }
 
+function normalizeUrl(name: string, value: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${name} must be a valid absolute URL. Received "${value}".`);
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`${name} must use http:// or https://. Received "${value}".`);
+  }
+
+  return parsed.toString().replace(/\/$/, '');
+}
+
 export function getServerApiBase(): string {
   const base = getFirstConfiguredValue(process.env['API_URL'], process.env['NEXT_PUBLIC_API_URL']);
   if (!base) {
     throw new Error('API_URL is not configured. Set API_URL (server-side) in your environment.');
   }
 
-  return base.replace(/\/$/, '');
+  return normalizeUrl('API_URL', base);
 }
 
 function getServiceAuthConfig(): ServiceAuthConfig | null {
@@ -64,11 +79,13 @@ function getServiceAuthConfig(): ServiceAuthConfig | null {
 export function assertWebRuntimeEnvironment(): void {
   getServerApiBase();
 
-  if (!getFirstConfiguredValue(process.env['NEXT_PUBLIC_API_URL'])) {
+  const publicApiUrl = getFirstConfiguredValue(process.env['NEXT_PUBLIC_API_URL']);
+  if (!publicApiUrl) {
     throw new Error(
       'NEXT_PUBLIC_API_URL is not configured. Set NEXT_PUBLIC_API_URL so browser-visible URLs stay explicit in production.',
     );
   }
+  normalizeUrl('NEXT_PUBLIC_API_URL', publicApiUrl);
 
   if (getFirstConfiguredValue(process.env['NEXT_PUBLIC_API_AUTH_TOKEN'])) {
     throw new Error(

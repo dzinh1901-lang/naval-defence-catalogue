@@ -1,0 +1,65 @@
+name: Staging Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: Base URL for the deployed API (for example https://staging-api.example.com)
+        required: true
+        type: string
+      web_url:
+        description: Base URL for the deployed web app (for example https://staging.example.com)
+        required: true
+        type: string
+      worker_health_url:
+        description: Optional worker health URL if the platform exposes one
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-staging:
+    name: Verify deployed staging environment
+    runs-on: ubuntu-latest
+    env:
+      DEPLOYMENT_VERIFY_API_URL: ${{ inputs.api_url }}
+      DEPLOYMENT_VERIFY_WEB_URL: ${{ inputs.web_url }}
+      DEPLOYMENT_VERIFY_WORKER_HEALTH_URL: ${{ inputs.worker_health_url }}
+      DEPLOYMENT_VERIFY_ARTIFACT_DIR: artifacts/deployment-verification
+      DEPLOYMENT_VERIFY_API_AUTH_TOKEN: ${{ secrets.STAGING_API_AUTH_TOKEN }}
+      AUTH_BOOTSTRAP_SECRET: ${{ secrets.STAGING_AUTH_BOOTSTRAP_SECRET }}
+      API_SERVICE_USER_ID: ${{ secrets.STAGING_API_SERVICE_USER_ID }}
+      API_SERVICE_EMAIL: ${{ secrets.STAGING_API_SERVICE_EMAIL }}
+      API_SERVICE_ORGANIZATION_ID: ${{ secrets.STAGING_API_SERVICE_ORGANIZATION_ID }}
+      API_SERVICE_ROLE: ${{ secrets.STAGING_API_SERVICE_ROLE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10.4.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify deployed environment
+        run: pnpm verify:deployment
+
+      - name: Upload deployment verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-verification-artifacts
+          path: artifacts/deployment-verification
+          if-no-files-found: ignore
