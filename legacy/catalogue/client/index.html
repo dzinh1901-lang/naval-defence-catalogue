@@ -17,17 +17,7 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script type="module">
-      const endpoint = "%VITE_ANALYTICS_ENDPOINT%";
-      const websiteId = "%VITE_ANALYTICS_WEBSITE_ID%";
-      if (endpoint && !endpoint.startsWith("%")) {
-        const s = document.createElement("script");
-        s.defer = true;
-        s.src = endpoint + "/umami";
-        s.dataset.websiteId = websiteId;
-        document.head.appendChild(s);
-      }
-    </script>
+    <!-- Analytics: set VITE_ANALYTICS_ENDPOINT and VITE_ANALYTICS_WEBSITE_ID env vars to enable -->
   </body>
 
 </html>
