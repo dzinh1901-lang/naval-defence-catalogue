@@ -220,6 +220,20 @@ async function main() {
       return null;
     }, 'API readiness endpoint');
 
+    const webReadyBody = await waitFor(async () => {
+      const response = await fetch(`${webBase}/api/health/ready`);
+      if (!response.ok) {
+        return null;
+      }
+
+      const body = await response.json();
+      if (body?.status === 'ok' && body?.dependency === 'api') {
+        return body;
+      }
+
+      return null;
+    }, 'web readiness endpoint');
+
     await waitFor(async () => {
       const response = await fetch(webBase);
       if (!response.ok) {
@@ -363,8 +377,9 @@ async function main() {
           apiBase,
           webBase,
           live: liveBody,
-          ready: readyBody,
-          projectId: primaryProject.id,
+           ready: readyBody,
+           webReady: webReadyBody,
+           projectId: primaryProject.id,
           projectName: primaryProject.name,
           twinId: firstTwinId,
         },

@@ -130,8 +130,11 @@ pnpm db:seed        # Re-seed the database
 pnpm db:studio      # Open Prisma Studio in browser
 
 # Verification
+pnpm test           # Runtime contract tests for startup validation helpers
 pnpm verify         # Lint + Prisma validate/generate + typecheck + build + artifact checks
+pnpm smoke:startup  # Boot built API/web/worker artifacts and verify health checks
 pnpm smoke:http     # HTTP smoke test for local API/web
+pnpm smoke:production  # Build images, run containers, and verify production startup
 pnpm verify:deployment  # Verify a deployed staging/prod environment via URLs + auth
 
 # Build
@@ -316,6 +319,7 @@ pnpm smoke:production
     - Web workspace proxy can persist `/api/workspace/:twinId/view-config`
     - Worker starts, reaches database readiness, and reports healthy
 
+See `docs/release-checklist.md` for the concise release gate and deployment assumptions.
 See `docs/release-notes/production-smoke-hardening.md` for rollout-focused notes, rollback guidance, and follow-up items.
 See `docs/deployment-readiness.md` for the explicit env contract, staging verification workflow, migration order, rollback expectations, and operator troubleshooting.
 

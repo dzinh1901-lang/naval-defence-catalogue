@@ -7,6 +7,7 @@
 - PostgreSQL 16 with the `vector` extension available (`pgvector/pgvector:pg16` in local CI/smoke).
 - A release candidate branch/commit that has passed:
   - `pnpm verify`
+  - `pnpm smoke:startup`
   - `pnpm smoke:production`
   - `.github/workflows/release-readiness.yml` if you want a single reusable release gate.
 
@@ -20,14 +21,14 @@
 | `JWT_SECRET` | Yes | Minimum 32 characters. API refuses to boot without it. |
 | `PORT` | Optional | Must be an integer between 1 and 65535. Defaults to `4000`. |
 | `AUTH_BOOTSTRAP_SECRET` | Conditional | Minimum 8 characters when set. Required only if the web runtime bootstraps its own API token. |
-| `NODE_ENV` | Recommended | Set `production` in deployed environments for predictable logging/runtime behaviour. |
+| `NODE_ENV` | Recommended | Must be one of `development`, `test`, `smoke`, `staging`, or `production`. Set `production` in deployed environments for predictable logging/runtime behaviour. |
 
 ### Web
 
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `API_URL` | Yes | Server-side API base URL. Must be a valid absolute `http(s)` URL and should point at the internal API address. |
-| `NEXT_PUBLIC_API_URL` | Yes | Browser-visible API base URL. Must be a valid absolute `http(s)` URL. |
+| `NEXT_PUBLIC_API_URL` | Yes | Browser-visible API base URL. Must be a valid absolute `http(s)` URL and must not use a container-only hostname such as `api`. |
 | `API_AUTH_TOKEN` | Conditional | Pre-issued server-side bearer token for protected API access. |
 | `AUTH_BOOTSTRAP_SECRET` | Conditional | Required with `API_SERVICE_*` when `API_AUTH_TOKEN` is not provided. |
 | `API_SERVICE_USER_ID` | Conditional | Required with bootstrap auth. |
@@ -41,7 +42,7 @@
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Must be a valid `postgresql://` or `postgres://` URL. |
-| `WORKER_READY_FILE` | Optional | File touched after DB readiness for container health checks. |
+| `WORKER_READY_FILE` | Optional | File touched after DB readiness for container health checks. Must be an absolute path when set. |
 | `NODE_ENV` | Recommended | Set `production` for deployment runs. |
 
 ### Auth callback / identity expectations
@@ -85,6 +86,24 @@
 
 ### Production-like local/staging-equivalent verification
 
+Use this when you want the built artifacts themselves to boot before you build or promote containers:
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm smoke:startup
+```
+
+What it verifies:
+
+- built API startup via `apps/api/scripts/start-production.mjs`
+- built web startup via `apps/web/scripts/start-production.mjs`
+- built worker startup via `apps/worker/scripts/start-production.mjs`
+- API `/api/v1/health/ready`
+- web `/api/health/ready`
+- worker ready-file creation and readiness logs
+- authenticated API token issuance from built artifacts
+
 Use this when you want the full built-image rehearsal, including worker startup:
 
 ```bash
@@ -97,6 +116,7 @@ What it verifies:
 
 - API build + production startup
 - web build + production startup
+- web `/api/health/live` + `/api/health/ready`
 - worker startup and DB readiness logs
 - API liveness/readiness endpoints
 - Prisma migration deploy/status + seed path
@@ -153,7 +173,14 @@ The worker does not currently expose a first-party HTTP readiness endpoint. For 
 ## CI/CD release gating
 
 - `.github/workflows/release-readiness.yml` is a deterministic reusable gate that runs:
-  - `pnpm verify`
+  - `pnpm db:validate`
+  - `pnpm db:generate`
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm test`
+  - `pnpm build`
+  - `pnpm verify:artifacts`
+  - `pnpm smoke:startup`
   - `pnpm smoke:production`
 - future deploy workflows should call `release-readiness.yml` before promotion so deployment depends on smoke success and validated image builds
 - `.github/workflows/staging-verification.yml` is an operator-triggered post-deploy verifier for remote staging
@@ -179,6 +206,7 @@ The worker does not currently expose a first-party HTTP readiness endpoint. For 
   - `API_URL`
   - `NEXT_PUBLIC_API_URL`
   - auth mode (`token` vs `bootstrap`)
+  - web live/ready endpoint paths
 - if page rendering fails, check web startup logs before investigating browser errors because all protected API calls originate server-side
 
 ### Worker
@@ -194,10 +222,11 @@ The worker does not currently expose a first-party HTTP readiness endpoint. For 
 1. confirm migrations applied successfully
 2. confirm `/api/v1/health/live` returns `200`
 3. confirm `/api/v1/health/ready` returns `200`
-4. confirm an authenticated `/api/v1/auth/me` succeeds
-5. confirm at least one project route and one twin/workspace route render live data
-6. confirm worker health/log readiness
-7. archive verification artifacts or workflow logs with the release record
+4. confirm `/api/health/ready` on the web runtime returns `200`
+5. confirm an authenticated `/api/v1/auth/me` succeeds
+6. confirm at least one project route and one twin/workspace route render live data
+7. confirm worker health/log readiness
+8. archive verification artifacts or workflow logs with the release record
 
 ## Remaining risks / follow-ups
 

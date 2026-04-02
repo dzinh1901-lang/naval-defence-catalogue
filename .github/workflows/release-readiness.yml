@@ -16,6 +16,7 @@ jobs:
     name: Verify release readiness
     runs-on: ubuntu-latest
     env:
+      STARTUP_SMOKE_ARTIFACT_DIR: artifacts/startup-smoke
       PRODUCTION_SMOKE_ARTIFACT_DIR: artifacts/production-smoke
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +33,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify workspace
-        run: pnpm verify
+      - name: Validate Prisma schema
+        run: pnpm db:validate
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Lint workspace
+        run: pnpm lint
+
+      - name: Type check workspace
+        run: pnpm typecheck
+
+      - name: Run runtime contract tests
+        run: pnpm test
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Verify build artifacts
+        run: pnpm verify:artifacts
+
+      - name: Run built-artifact startup smoke
+        run: pnpm smoke:startup
 
       - name: Run production smoke pipeline
         run: pnpm smoke:production
@@ -43,5 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-readiness-artifacts
-          path: artifacts/production-smoke
+          path: |
+            artifacts/startup-smoke
+            artifacts/production-smoke
           if-no-files-found: ignore
