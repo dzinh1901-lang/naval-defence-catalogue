@@ -9,13 +9,14 @@ const serviceAuthFieldNames = [
   'API_SERVICE_ORGANIZATION_ID',
   'API_SERVICE_ROLE',
 ] as const;
+const serviceRoles = ['ADMIN', 'MEMBER', 'VIEWER'] as const;
 
 type ServiceAuthConfig = {
   bootstrapSecret: string;
   userId: string;
   email: string;
   organizationId: string;
-  role: 'ADMIN' | 'MEMBER' | 'VIEWER';
+  role: (typeof serviceRoles)[number];
 };
 
 function getFirstConfiguredValue(...values: Array<string | undefined>): string | undefined {
@@ -47,7 +48,7 @@ function getServiceAuthConfig(): ServiceAuthConfig | null {
     );
   }
 
-  if (!['ADMIN', 'MEMBER', 'VIEWER'].includes(configuredValues['API_SERVICE_ROLE']!)) {
+  if (!serviceRoles.includes(configuredValues['API_SERVICE_ROLE']! as (typeof serviceRoles)[number])) {
     throw new Error('API_SERVICE_ROLE must be one of ADMIN, MEMBER, or VIEWER.');
   }
 
@@ -139,14 +140,19 @@ export async function resolveServerApiAuthToken(): Promise<string | undefined> {
   }
 
   if (!pendingTokenPromise) {
-    pendingTokenPromise = issueServerApiToken()
-      .then((token) => {
+    pendingTokenPromise = (async () => {
+      try {
+        const token = await issueServerApiToken();
         cachedServerApiAuthToken = token;
         return token;
-      })
-      .finally(() => {
+      } catch (error) {
+        throw new Error(
+          `Server-side API token bootstrap failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      } finally {
         pendingTokenPromise = null;
-      });
+      }
+    })();
   }
 
   return pendingTokenPromise;

@@ -6,15 +6,23 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { IsEmail, IsIn, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsString, Matches, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import type { RequestUser } from '../../common/types/request-user.type';
 
+// Seeded service principals use stable slug-like IDs (for example `dev-user-admin`),
+// so token bootstrap validation accepts the same alphanumeric + hyphen format.
+const tokenPrincipalIdPattern = /^[A-Za-z0-9-]+$/;
+const tokenRoles = ['ADMIN', 'MEMBER', 'VIEWER'] as const;
+
 class IssueTokenDto {
   @IsString()
   @MinLength(1)
+  @Matches(tokenPrincipalIdPattern, {
+    message: 'userId must contain only letters, numbers, and hyphens.',
+  })
   userId!: string;
 
   @IsEmail()
@@ -22,10 +30,13 @@ class IssueTokenDto {
 
   @IsString()
   @MinLength(1)
+  @Matches(tokenPrincipalIdPattern, {
+    message: 'organizationId must contain only letters, numbers, and hyphens.',
+  })
   organizationId!: string;
 
-  @IsIn(['ADMIN', 'MEMBER', 'VIEWER'])
-  role!: 'ADMIN' | 'MEMBER' | 'VIEWER';
+  @IsIn([...tokenRoles])
+  role!: (typeof tokenRoles)[number];
 
   /**
    * Dev-only bootstrap secret — prevents unrestricted token issuance.

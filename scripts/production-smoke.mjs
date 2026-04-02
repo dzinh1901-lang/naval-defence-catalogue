@@ -13,6 +13,7 @@ const artifactDir = path.resolve(
 );
 const composeFile = path.join(rootDir, 'docker-compose.production-smoke.yml');
 const composeProject = `naval-smoke-${Date.now()}`;
+const readinessTimeoutMs = Number(process.env['PRODUCTION_SMOKE_READY_TIMEOUT_MS'] ?? '120000');
 const smokeEnv = {
   ...process.env,
   JWT_SECRET:
@@ -128,7 +129,7 @@ async function cleanup() {
   }
 }
 
-async function waitFor(check, description, timeoutMs = 120_000, intervalMs = 2_500) {
+async function waitFor(check, description, timeoutMs = readinessTimeoutMs, intervalMs = 2_500) {
   const deadline = Date.now() + timeoutMs;
   let lastError;
 
@@ -238,17 +239,21 @@ async function main() {
       throw new Error(`Unexpected expired-token response: ${expiredAuth.body}`);
     }
 
-    const validTokenResponse = await httpExpect(`${apiBase}/api/v1/auth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: smokeEnv.API_SERVICE_USER_ID,
-        email: smokeEnv.API_SERVICE_EMAIL,
-        organizationId: smokeEnv.API_SERVICE_ORGANIZATION_ID,
-        role: smokeEnv.API_SERVICE_ROLE,
-        bootstrapSecret: smokeEnv.AUTH_BOOTSTRAP_SECRET,
-      }),
-    });
+    const validTokenResponse = await httpExpect(
+      `${apiBase}/api/v1/auth/token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: smokeEnv.API_SERVICE_USER_ID,
+          email: smokeEnv.API_SERVICE_EMAIL,
+          organizationId: smokeEnv.API_SERVICE_ORGANIZATION_ID,
+          role: smokeEnv.API_SERVICE_ROLE,
+          bootstrapSecret: smokeEnv.AUTH_BOOTSTRAP_SECRET,
+        }),
+      },
+      201,
+    );
     const { accessToken } = JSON.parse(validTokenResponse.body);
     if (!accessToken) {
       throw new Error('Auth bootstrap response did not include accessToken.');

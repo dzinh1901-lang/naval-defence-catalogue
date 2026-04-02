@@ -1,5 +1,5 @@
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-bullseye-slim AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ ENV NEXT_PUBLIC_API_URL=http://api:4000
 RUN pnpm --filter @naval/web build
 
 # ── Production stage ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-bullseye-slim AS runner
 
 WORKDIR /app
 
@@ -39,6 +39,6 @@ COPY --from=builder /app/apps/web/scripts/start-production.mjs ./apps/web/script
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s \
-  CMD wget -qO- http://localhost:3000 || exit 1
+  CMD node -e "fetch('http://localhost:3000').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 CMD ["node", "apps/web/scripts/start-production.mjs"]

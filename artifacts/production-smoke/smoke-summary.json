@@ -1,0 +1,15 @@
+{
+  "apiBase": "http://localhost:4400",
+  "webBase": "http://localhost:3300",
+  "health": {
+    "status": "ok",
+    "timestamp": "2026-04-02T01:17:36.082Z",
+    "services": {
+      "api": "ok",
+      "database": "ok"
+    },
+    "version": "0.1.0"
+  },
+  "projectId": "cmngsbvwi0007zeo7qd8umu2o",
+  "projectName": "Type 52 Guided Missile Frigate"
+}
