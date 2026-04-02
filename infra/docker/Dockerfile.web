@@ -7,6 +7,7 @@ RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY patches/ ./patches/
+COPY scripts/startup-runtime.mjs ./scripts/
 COPY packages/config/package.json ./packages/config/
 COPY packages/domain/package.json ./packages/domain/
 COPY packages/ui/package.json ./packages/ui/
@@ -19,8 +20,9 @@ COPY packages/domain/ ./packages/domain/
 COPY packages/ui/ ./packages/ui/
 COPY apps/web/ ./apps/web/
 
-# Set API URL for production build
-ENV NEXT_PUBLIC_API_URL=http://api:4000
+# Set a browser-reachable default for the client bundle; override with --build-arg in real deploy pipelines.
+ARG NEXT_PUBLIC_API_URL=http://localhost:4400
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 RUN pnpm --filter @naval/web build
 
@@ -35,6 +37,7 @@ ENV PORT=3000
 COPY --from=builder /app/apps/web/.next/standalone ./apps/web/.next/standalone
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/scripts/start-production.mjs ./apps/web/scripts/start-production.mjs
+COPY --from=builder /app/scripts/startup-runtime.mjs ./scripts/startup-runtime.mjs
 
 EXPOSE 3000
 

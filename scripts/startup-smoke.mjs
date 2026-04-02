@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import net from 'node:net';
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { formatDatabaseTarget, parseDatabaseUrl } from './startup-runtime.mjs';
@@ -27,6 +28,29 @@ const smokeEnv = {
     process.env['DATABASE_URL'] ?? 'postgresql://naval:naval_dev@127.0.0.1:54329/naval_dt',
 };
 const services = [];
+
+async function getAvailablePort() {
+  return await new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        server.close(() => reject(new Error('Failed to allocate an ephemeral port.')));
+        return;
+      }
+
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(address.port);
+      });
+    });
+    server.on('error', reject);
+  });
+}
 
 async function run(command, args, options = {}) {
   const label = [command, ...args].join(' ');
@@ -143,8 +167,8 @@ async function captureArtifacts() {
   await Promise.all([
     writeFile(path.join(artifactDir, 'env-summary.json'), JSON.stringify({
       databaseTarget: formatDatabaseTarget(parseDatabaseUrl(smokeEnv.DATABASE_URL)),
-      apiPort: 4100,
-      webPort: 3100,
+      apiPort: smokeEnv.STARTUP_SMOKE_API_PORT,
+      webPort: smokeEnv.STARTUP_SMOKE_WEB_PORT,
       workerReadyFile,
     }, null, 2), 'utf8'),
     run('docker', ['compose', '-f', composeFile, '-p', composeProject, 'logs', '--no-color', 'db']).then((content) =>
@@ -168,6 +192,11 @@ async function main() {
   await mkdir(artifactDir, { recursive: true });
 
   try {
+    const apiPort = String(await getAvailablePort());
+    const webPort = String(await getAvailablePort());
+    smokeEnv.STARTUP_SMOKE_API_PORT = apiPort;
+    smokeEnv.STARTUP_SMOKE_WEB_PORT = webPort;
+
     await run('pnpm', ['db:generate']);
     await run('pnpm', ['db:validate']);
     await run('pnpm', ['build']);
@@ -184,12 +213,16 @@ async function main() {
     await run('pnpm', ['db:seed']);
 
     const api = startService('api', path.join(rootDir, 'apps/api/scripts/start-production.mjs'), {
-      PORT: '4100',
+      PORT: apiPort,
       DATABASE_URL: smokeEnv.DATABASE_URL,
     });
 
     const apiReadyBody = await waitFor(async () => {
-      const response = await fetch('http://127.0.0.1:4100/api/v1/health/ready');
+      if (api.child.exitCode !== null) {
+        throw new Error(`API process exited early. ${api.getOutput()}`);
+      }
+
+      const response = await fetch(`http://127.0.0.1:${apiPort}/api/v1/health/ready`);
       if (!response.ok) {
         return null;
       }
@@ -213,13 +246,17 @@ async function main() {
     }, 'worker ready file');
 
     const web = startService('web', path.join(rootDir, 'apps/web/scripts/start-production.mjs'), {
-      PORT: '3100',
-      API_URL: 'http://127.0.0.1:4100',
-      NEXT_PUBLIC_API_URL: 'http://127.0.0.1:4100',
+      PORT: webPort,
+      API_URL: `http://127.0.0.1:${apiPort}`,
+      NEXT_PUBLIC_API_URL: `http://127.0.0.1:${apiPort}`,
     });
 
     const webReadyBody = await waitFor(async () => {
-      const response = await fetch('http://127.0.0.1:3100/api/health/ready');
+      if (web.child.exitCode !== null) {
+        throw new Error(`Web process exited early. ${web.getOutput()}`);
+      }
+
+      const response = await fetch(`http://127.0.0.1:${webPort}/api/health/ready`);
       if (!response.ok) {
         return null;
       }
@@ -228,7 +265,7 @@ async function main() {
       return body?.status === 'ok' ? body : null;
     }, 'built web readiness endpoint');
 
-    const authTokenResponse = await httpExpect('http://127.0.0.1:4100/api/v1/auth/token', {
+    const authTokenResponse = await httpExpect(`http://127.0.0.1:${apiPort}/api/v1/auth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -244,11 +281,11 @@ async function main() {
       throw new Error('Auth bootstrap response did not include accessToken.');
     }
 
-    await httpExpect('http://127.0.0.1:4100/api/v1/auth/me', {
+    await httpExpect(`http://127.0.0.1:${apiPort}/api/v1/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
-    const homepage = await httpExpect('http://127.0.0.1:3100');
+    const homepage = await httpExpect(`http://127.0.0.1:${webPort}`);
     if (!homepage.body.includes(expectedWebMarker)) {
       throw new Error('Built web runtime did not render the expected homepage marker.');
     }
@@ -289,7 +326,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });

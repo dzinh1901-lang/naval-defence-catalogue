@@ -64,6 +64,14 @@ async function main() {
     env: process.env,
   });
 
+  const forwardSignal = (signal) => {
+    if (!child.killed && child.exitCode === null) {
+      child.kill(signal);
+    }
+  };
+  process.once('SIGINT', () => forwardSignal('SIGINT'));
+  process.once('SIGTERM', () => forwardSignal('SIGTERM'));
+
   child.on('exit', (code, signal) => {
     if (signal) {
       process.kill(process.pid, signal);
