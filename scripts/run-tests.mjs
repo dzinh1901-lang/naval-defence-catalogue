@@ -45,5 +45,5 @@ child.on('exit', (code, signal) => {
     return;
   }
 
-  process.exit(code ?? 1);
+  process.exit(code !== null ? code : 1);
 });
