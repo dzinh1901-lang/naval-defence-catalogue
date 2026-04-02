@@ -2,10 +2,12 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
+import { assertApiRuntimeEnvironment } from './config/runtime-env';
 import { AppModule } from './app.module';
 import { assertAuthEnvironment } from './modules/auth/auth-env';
 
 async function bootstrap() {
+  assertApiRuntimeEnvironment();
   assertAuthEnvironment();
   const app = await NestFactory.create(AppModule, { bufferLogs: true, cors: true });
 

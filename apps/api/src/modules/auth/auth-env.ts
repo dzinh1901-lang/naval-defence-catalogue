@@ -1,31 +1,22 @@
-const DEV_JWT_SECRET = 'dev-secret-change-in-production';
-
 export function isProductionEnv(): boolean {
   return process.env['NODE_ENV'] === 'production';
 }
 
 export function getJwtSecret(): string {
   const configuredSecret = process.env['JWT_SECRET']?.trim();
-  if (configuredSecret) {
-    return configuredSecret;
+  if (!configuredSecret) {
+    throw new Error('JWT_SECRET must be set before the API can issue or validate bearer tokens.');
   }
 
-  if (isProductionEnv()) {
-    throw new Error('JWT_SECRET must be set in production.');
+  if (configuredSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long.');
   }
 
-  return DEV_JWT_SECRET;
-}
-
-export function canUseDevAuthFallback(): boolean {
-  return !isProductionEnv() && !process.env['JWT_SECRET']?.trim();
+  return configuredSecret;
 }
 
 export function assertAuthEnvironment(): void {
-  const jwtSecret = process.env['JWT_SECRET']?.trim();
-  if (isProductionEnv() && (!jwtSecret || jwtSecret.length < 32)) {
-    throw new Error('JWT_SECRET must be set to at least 32 characters in production.');
-  }
+  getJwtSecret();
 
   const bootstrapSecret = process.env['AUTH_BOOTSTRAP_SECRET']?.trim();
   if (bootstrapSecret && bootstrapSecret.length < 8) {

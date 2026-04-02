@@ -6,6 +6,7 @@ const requiredArtifacts = [
   'apps/api/dist/main.js',
   'apps/worker/dist/index.js',
   'apps/web/.next/BUILD_ID',
+  'apps/web/.next/standalone/apps/web/server.js',
   'packages/domain/dist/index.js',
   'packages/ui/dist/index.js',
 ];

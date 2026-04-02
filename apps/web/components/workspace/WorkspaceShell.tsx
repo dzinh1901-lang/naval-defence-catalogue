@@ -15,7 +15,6 @@ import { InspectorPanel } from './InspectorPanel';
 import { AlertsOverlay } from './AlertsOverlay';
 import { HistoryOverlay } from './HistoryOverlay';
 import { AlertTriangle, Clock } from 'lucide-react';
-import { getPublicApiAuthToken, getPublicApiBase } from '@/lib/env';
 import { cn } from '@/lib/utils';
 
 export type WorkspaceSection =
@@ -64,6 +63,7 @@ export function WorkspaceShell({
   // ── Overlay visibility ────────────────────────────────────────────────────
   const [alertsOpen, setAlertsOpen] = useState(alerts.some((a) => !a.resolvedAt));
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
   // ── View-config persistence ───────────────────────────────────────────────
   const persistViewConfig = useCallback(
@@ -74,19 +74,32 @@ export function WorkspaceShell({
       camFstop?: number;
     }) => {
       try {
-        const apiBase = getPublicApiBase();
-        const apiToken = getPublicApiAuthToken();
-
-        await fetch(`${apiBase}/api/v1/workspace/${twinId}/view-config`, {
+        const response = await fetch(`/api/workspace/${twinId}/view-config`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {}),
           },
           body: JSON.stringify(patch),
         });
+
+        if (!response.ok) {
+          const body = await response.text();
+          if (response.status === 401) {
+            setPersistenceError(
+              body.toLowerCase().includes('expired')
+                ? 'Workspace update token expired. Renew the server-side API credentials and retry.'
+                : 'Workspace updates are unauthorized. Check the server-side API auth configuration.',
+            );
+            return;
+          }
+
+          setPersistenceError('Workspace updates could not be saved right now.');
+          return;
+        }
+
+        setPersistenceError(null);
       } catch {
-        // Silently swallow — UI state still updates locally.
+        setPersistenceError('Workspace updates could not be saved right now.');
       }
     },
     [twinId],
@@ -163,6 +176,11 @@ export function WorkspaceShell({
 
           {/* Bottom overlay toggle buttons */}
           <div className="absolute bottom-4 left-4 flex gap-2 z-10">
+            {persistenceError && (
+              <div className="max-w-sm rounded border border-naval-red/30 bg-naval-red/10 px-3 py-2 text-2xs font-medium text-naval-red">
+                {persistenceError}
+              </div>
+            )}
             {activeAlertCount > 0 && (
               <button
                 onClick={() => setAlertsOpen((v) => !v)}
