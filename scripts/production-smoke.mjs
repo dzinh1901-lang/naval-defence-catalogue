@@ -14,6 +14,7 @@ const artifactDir = path.resolve(
 const composeFile = path.join(rootDir, 'docker-compose.production-smoke.yml');
 const composeProject = `naval-smoke-${Date.now()}`;
 const readinessTimeoutMs = Number(process.env['PRODUCTION_SMOKE_READY_TIMEOUT_MS'] ?? '120000');
+const expectedWebMarker = process.env['PRODUCTION_SMOKE_EXPECTED_WEB_MARKER'] ?? 'Digital Twin Platform';
 const smokeEnv = {
   ...process.env,
   JWT_SECRET:
@@ -226,7 +227,7 @@ async function main() {
       }
 
       const body = await response.text();
-      return body.includes('Digital Twin Platform') ? body : null;
+      return body.includes(expectedWebMarker) ? body : null;
     }, 'web root');
 
     const missingAuth = await httpExpect(`${apiBase}/api/v1/auth/me`, {}, 401);

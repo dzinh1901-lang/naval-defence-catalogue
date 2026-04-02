@@ -7,6 +7,7 @@ const artifactDir = path.resolve(
   process.env['DEPLOYMENT_VERIFY_ARTIFACT_DIR'] ?? 'artifacts/deployment-verification',
 );
 const timeoutMs = Number(process.env['DEPLOYMENT_VERIFY_TIMEOUT_MS'] ?? '120000');
+const expectedWebMarker = process.env['DEPLOYMENT_VERIFY_EXPECTED_WEB_MARKER'] ?? 'Digital Twin Platform';
 
 function readRequiredEnv(name) {
   const value = process.env[name]?.trim();
@@ -181,7 +182,7 @@ async function main() {
     const homepage = await waitFor(async () => {
       const response = await request(webBase);
       await writeArtifact('web-home.json', response);
-      return response.status === 200 && response.body.includes('Digital Twin Platform') ? response : null;
+      return response.status === 200 && response.body.includes(expectedWebMarker) ? response : null;
     }, 'web root');
 
     const accessToken = await issueToken(apiBase);
@@ -233,14 +234,14 @@ async function main() {
       throw new Error(`Web homepage did not render "${primaryProject.name}".`);
     }
 
-    const twinId = project?.twins?.[0]?.id;
+    const firstTwinId = project?.twins?.[0]?.id;
     let workspaceSummary = null;
     let proxyMutation = null;
     let workerCheck = { status: 'skipped', reason: 'DEPLOYMENT_VERIFY_WORKER_HEALTH_URL is not configured.' };
 
-    if (twinId) {
+    if (firstTwinId) {
       const workspaceResponse = await expectStatus(
-        `${apiBase}/api/v1/workspace/${twinId}`,
+        `${apiBase}/api/v1/workspace/${firstTwinId}`,
         undefined,
         200,
         'workspace-summary.json',
@@ -248,7 +249,7 @@ async function main() {
       workspaceSummary = JSON.parse(workspaceResponse.body);
 
       const currentViewConfig = await expectStatus(
-        `${apiBase}/api/v1/workspace/${twinId}/view-config`,
+        `${apiBase}/api/v1/workspace/${firstTwinId}/view-config`,
         undefined,
         200,
         'workspace-view-config-before.json',
@@ -263,7 +264,7 @@ async function main() {
       };
 
       const proxyResponse = await expectStatus(
-        `${webBase}/api/workspace/${twinId}/view-config`,
+        `${webBase}/api/workspace/${firstTwinId}/view-config`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -275,15 +276,21 @@ async function main() {
       proxyMutation = JSON.parse(proxyResponse.body);
 
       const twinPage = await expectStatus(
-        `${webBase}/projects/${primaryProject.id}/twins/${twinId}`,
+        `${webBase}/projects/${primaryProject.id}/twins/${firstTwinId}`,
         undefined,
         200,
         'web-twin.json',
       );
 
       if (!twinPage.body.includes(workspaceSummary?.twin?.name ?? '')) {
-        throw new Error(`Web twin page did not render "${workspaceSummary?.twin?.name ?? twinId}".`);
+        throw new Error(
+          `Web twin page did not render "${workspaceSummary?.twin?.name ?? firstTwinId}".`,
+        );
       }
+    } else {
+      console.log(
+        `Skipping twin-specific verification because project "${primaryProject.name}" does not currently expose any twins.`,
+      );
     }
 
     if (workerHealthUrl) {

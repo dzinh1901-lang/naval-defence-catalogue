@@ -3,6 +3,8 @@ import type { Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Public } from '../../common/decorators/public.decorator';
 
+const fallbackVersion = '0.1.0';
+
 @Public()
 @Controller('health')
 export class HealthController {
@@ -23,7 +25,7 @@ export class HealthController {
       pid: process.pid,
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.round(process.uptime()),
-      version: process.env['npm_package_version'] ?? '0.1.0',
+      version: process.env['npm_package_version'] ?? fallbackVersion,
     };
   }
 
@@ -34,7 +36,7 @@ export class HealthController {
 
     return {
       status: dbStatus === 'ok' ? 'ok' : 'degraded',
-      signal: 'health',
+      signal: 'ready',
       services: {
         api: 'ok',
         database: dbStatus,
@@ -60,6 +62,7 @@ export class HealthController {
   @Version('1')
   async ready(@Res({ passthrough: true }) response: Response) {
     const dbStatus = await this.getDatabaseStatus();
+    // Keep the structured readiness payload while still returning a probe-friendly 503 on failure.
     if (dbStatus !== 'ok') {
       response.status(503);
     }
