@@ -35,6 +35,6 @@ export function assertWorkerRuntimeEnvironment(): {
 
   return {
     databaseUrl: parseDatabaseUrl(databaseUrl),
-    readyFile: readyFile || undefined,
+    ...(readyFile ? { readyFile } : {}),
   };
 }
