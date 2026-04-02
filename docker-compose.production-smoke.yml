@@ -1,0 +1,60 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: naval
+      POSTGRES_PASSWORD: naval_dev
+      POSTGRES_DB: naval_dt
+    ports:
+      - "54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U naval -d naval_dt"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: naval-api:smoke
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://naval:naval_dev@db:5432/naval_dt
+      NODE_ENV: production
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET}
+      AUTH_BOOTSTRAP_SECRET: ${AUTH_BOOTSTRAP_SECRET}
+    ports:
+      - "4400:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: naval-web:smoke
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4400
+      AUTH_BOOTSTRAP_SECRET: ${AUTH_BOOTSTRAP_SECRET}
+      API_SERVICE_USER_ID: ${API_SERVICE_USER_ID}
+      API_SERVICE_EMAIL: ${API_SERVICE_EMAIL}
+      API_SERVICE_ORGANIZATION_ID: ${API_SERVICE_ORGANIZATION_ID}
+      API_SERVICE_ROLE: ${API_SERVICE_ROLE}
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3300:3000"
+    depends_on:
+      api:
+        condition: service_started
+
+  worker:
+    image: naval-worker:smoke
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://naval:naval_dev@db:5432/naval_dt
+      NODE_ENV: production
+      WORKER_READY_FILE: /tmp/naval-worker-ready
+    depends_on:
+      db:
+        condition: service_healthy

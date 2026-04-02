@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
+
   // Transpile workspace packages
   transpilePackages: ['@naval/domain', '@naval/ui'],
 

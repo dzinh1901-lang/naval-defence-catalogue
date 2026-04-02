@@ -32,22 +32,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
-
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY patches/ ./patches/
-COPY packages/config/package.json ./packages/config/
-COPY packages/domain/package.json ./packages/domain/
-COPY packages/ui/package.json ./packages/ui/
-COPY apps/web/package.json ./apps/web/
-
-RUN pnpm install --frozen-lockfile --prod
-
-COPY --from=builder /app/apps/web/.next ./apps/web/.next
+COPY --from=builder /app/apps/web/.next/standalone ./apps/web/.next/standalone
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/scripts/start-production.mjs ./apps/web/scripts/start-production.mjs
 
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s \
   CMD wget -qO- http://localhost:3000 || exit 1
 
-CMD ["pnpm", "--filter", "@naval/web", "start"]
+CMD ["node", "apps/web/scripts/start-production.mjs"]

@@ -1,18 +1,27 @@
-import { Body, Controller, Get, Post, UnauthorizedException } from '@nestjs/common';
-import { IsEmail, IsIn, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { IsEmail, IsIn, IsString, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import type { RequestUser } from '../../common/types/request-user.type';
 
 class IssueTokenDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   userId!: string;
 
   @IsEmail()
   email!: string;
 
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   organizationId!: string;
 
   @IsIn(['ADMIN', 'MEMBER', 'VIEWER'])
@@ -40,8 +49,14 @@ export class AuthController {
   @Public()
   @Post('token')
   issueToken(@Body() dto: IssueTokenDto) {
-    const expected = process.env['AUTH_BOOTSTRAP_SECRET'];
-    if (!expected || dto.bootstrapSecret !== expected) {
+    const expected = process.env['AUTH_BOOTSTRAP_SECRET']?.trim();
+    if (!expected) {
+      throw new ServiceUnavailableException(
+        'AUTH_BOOTSTRAP_SECRET is not configured on this API instance.',
+      );
+    }
+
+    if (dto.bootstrapSecret !== expected) {
       throw new UnauthorizedException('Invalid bootstrap secret');
     }
 

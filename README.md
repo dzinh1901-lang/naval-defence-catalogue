@@ -211,22 +211,22 @@ The API uses JWT-based authentication via `@nestjs/passport` and `passport-jwt`.
 
 | Variable | Required | Description |
 |---|---|---|
-| `JWT_SECRET` | Production | HS256 signing secret (min 32 chars). The API refuses to boot in production if it is missing or too short. |
+| `JWT_SECRET` | API runtime | HS256 signing secret (min 32 chars). The API refuses to boot if it is missing or too short. |
 | `JWT_EXPIRES_IN_SECS` | Optional | Token lifetime in seconds (default: 604800 = 7 days). |
-| `AUTH_BOOTSTRAP_SECRET` | Optional | Secret for `POST /auth/token` — dev/service-account token issuance. Must be at least 8 characters when set. |
+| `AUTH_BOOTSTRAP_SECRET` | Web/API bootstrap | Secret for `POST /auth/token` — service-account token issuance. Must be at least 8 characters when set. |
 | `API_URL` | Web runtime | Server-side base URL used by the Next.js app to call the API. |
-| `NEXT_PUBLIC_API_URL` | Browser runtime | Browser-visible API base URL for client-side fetches. |
-| `API_AUTH_TOKEN` | Optional | Server-side bearer token used by the web app for protected API calls. |
-| `NEXT_PUBLIC_API_AUTH_TOKEN` | Optional | Browser-side bearer token used by interactive workspace updates. |
+| `NEXT_PUBLIC_API_URL` | Browser runtime | Browser-visible API base URL. |
+| `API_AUTH_TOKEN` | Optional | Pre-issued server-side bearer token used by the web app for protected API calls. |
+| `API_SERVICE_USER_ID` | Web bootstrap | Service principal user ID used when the web app bootstraps its own token. |
+| `API_SERVICE_EMAIL` | Web bootstrap | Service principal email used when the web app bootstraps its own token. |
+| `API_SERVICE_ORGANIZATION_ID` | Web bootstrap | Service principal organization ID used when the web app bootstraps its own token. |
+| `API_SERVICE_ROLE` | Web bootstrap | Service principal role (`ADMIN`, `MEMBER`, or `VIEWER`) used when the web app bootstraps its own token. |
 
 ### Development
 
-Without `JWT_SECRET` set, the API only accepts the explicit seeded development tokens:
-
-- `Authorization: Bearer dev-token` → ADMIN user
-- `Authorization: Bearer dev-member-token` → MEMBER user
-- `Authorization: Bearer dev-viewer-token` → VIEWER user
-- Routes decorated with `@Public()` bypass token checking.
+- Set `JWT_SECRET` and `AUTH_BOOTSTRAP_SECRET` in local development before starting the API.
+- The seeded values in `.env.example` let the web app bootstrap a JWT for the seeded admin service account.
+- Routes decorated with `@Public()` still bypass token checking.
 
 ### Issuing JWT tokens
 
@@ -236,8 +236,9 @@ In production, replace this endpoint with a proper identity provider flow (OIDC/
 ### Production expectations
 
 - Set `NODE_ENV=production`.
-- Set a strong `JWT_SECRET` before starting the API. Production startup fails fast without it.
-- The web app stops defaulting to `dev-token` when `NODE_ENV=production`.
+- Set a strong `JWT_SECRET` before starting the API. Startup fails fast without it.
+- Configure either `API_AUTH_TOKEN` or `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*` before starting the web app.
+- `NEXT_PUBLIC_API_AUTH_TOKEN` is no longer supported; interactive workspace mutations now proxy through the Next.js server.
 - Run `pnpm db:migrate:deploy` before rolling out API or worker changes.
 - Set `API_URL` and `NEXT_PUBLIC_API_URL` explicitly for deployed web environments.
 
@@ -289,37 +290,30 @@ Use `db:migrate` only for local development when creating new migrations. Use
 corepack enable
 pnpm install --frozen-lockfile
 cp .env.example .env
-docker compose up db -d
-pnpm db:validate
-pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
 pnpm verify
-pnpm dev:api
-pnpm dev:web
-pnpm dev:worker
-pnpm smoke:http
+pnpm smoke:production
 ```
 
 ### Docker / Compose
 
 ```bash
-docker compose down -v
-docker compose up --build
-pnpm smoke:http
-docker compose logs -f api web worker
+docker compose -f docker-compose.production-smoke.yml down -v
+pnpm smoke:production
 ```
 
 ### Staging / production expectations
 
 1. Build and publish the API, web, and worker images from `infra/docker/`.
 2. Apply committed Prisma migrations with `pnpm db:migrate:deploy`.
-3. Confirm `JWT_SECRET`, `API_URL`, `NEXT_PUBLIC_API_URL`, and any bootstrap/service tokens are set.
+3. Confirm `JWT_SECRET`, `API_URL`, `NEXT_PUBLIC_API_URL`, and either `API_AUTH_TOKEN` or `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*` are set.
 4. Smoke-test:
-   - `GET /api/v1/health`
-   - `GET /api/v1/projects` with a valid bearer token
-   - Web homepage renders live project data
-   - Worker starts and logs `Database connection OK`
+    - `GET /api/v1/health`
+    - `GET /api/v1/auth/me` with missing, invalid, expired, and valid auth
+    - `GET /api/v1/projects` with a valid bearer token
+    - Web homepage and a seeded project route render live project data
+    - Worker starts, reaches database readiness, and reports healthy
+
+See `docs/release-notes/production-smoke-hardening.md` for rollout-focused notes, rollback guidance, and follow-up items.
 
 ---
 

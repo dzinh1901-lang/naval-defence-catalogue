@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { listProjects } from '@/lib/api';
+import { ApiClientError, listProjects } from '@/lib/api';
 import { ProjectCard } from '@/components/projects/project-card';
 import { NavalLogo } from '@/components/ui/naval-logo';
 import type { Project } from '@naval/domain';
@@ -12,12 +12,16 @@ export const dynamic = 'force-dynamic';
  */
 export default async function HomePage() {
   let projects: Project[] = [];
-  let apiError = false;
+  let apiError: 'none' | 'unavailable' | 'unauthorized' | 'expired' = 'none';
 
   try {
     projects = await listProjects();
-  } catch {
-    apiError = true;
+  } catch (error) {
+    if (error instanceof ApiClientError && error.isUnauthorized) {
+      apiError = error.isExpiredToken ? 'expired' : 'unauthorized';
+    } else {
+      apiError = 'unavailable';
+    }
   }
 
   return (
@@ -46,18 +50,28 @@ export default async function HomePage() {
       </div>
 
       {/* Error banner */}
-      {apiError && (
+      {apiError !== 'none' && (
         <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-naval-red/10 border border-naval-red/30 text-naval-red text-xs font-mono">
-          API unavailable — ensure the backend is running at{' '}
-          <code className="font-bold">{process.env['API_URL'] ?? process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000'}</code>.
-          Start it with <code className="font-bold">pnpm dev:api</code>.
+          {apiError === 'unavailable' ? (
+            <>
+              API unavailable — ensure the backend is running at{' '}
+              <code className="font-bold">
+                {process.env['API_URL'] ?? process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000'}
+              </code>
+              . Start it with <code className="font-bold">pnpm dev:api</code>.
+            </>
+          ) : apiError === 'expired' ? (
+            <>Configured API credentials have expired. Renew the server-side token or bootstrap settings.</>
+          ) : (
+            <>Configured API credentials were rejected. Check API_AUTH_TOKEN or AUTH_BOOTSTRAP_SECRET + API_SERVICE_*.</>
+          )}
         </div>
       )}
 
       {/* Project grid */}
       <main className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto">
-          {!apiError && projects.length === 0 ? (
+          {apiError === 'none' && projects.length === 0 ? (
             <div className="text-center py-16 text-text-muted text-sm">
               No projects found. Run <code className="font-mono bg-surface-2 px-1 rounded">pnpm db:seed</code> to populate sample data.
             </div>

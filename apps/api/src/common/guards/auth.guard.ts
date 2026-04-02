@@ -1,6 +1,7 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthService } from '../../modules/auth/auth.service';
+import { extractBearerToken } from '../../modules/auth/auth-header';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
@@ -19,13 +20,17 @@ export class AuthGuard implements CanActivate {
     if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest<{ headers: Record<string, string>; user?: unknown }>();
-    const authHeader = request.headers['authorization'];
-    const token = authHeader?.replace('Bearer ', '');
+    const token = extractBearerToken(request.headers['authorization']);
+    if (!token) {
+      throw new UnauthorizedException('Missing or invalid Authorization: Bearer <token> header.');
+    }
 
-    const user = this.authService.validateToken(token);
-    if (!user) return false;
+    const result = this.authService.validateToken(token);
+    if (!result.ok) {
+      throw new UnauthorizedException(result.message);
+    }
 
-    request.user = user;
+    request.user = result.user;
     return true;
   }
 }

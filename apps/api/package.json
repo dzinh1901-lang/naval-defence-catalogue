@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "node dist/main.js",
+    "start": "node ./scripts/start-production.mjs",
     "start:dev": "concurrently --kill-others-on-fail --names tsc,api --prefix-colors yellow,blue \"node ./scripts/watch-build.mjs\" \"node ./scripts/wait-for-build.mjs\"",
     "start:debug": "concurrently --kill-others-on-fail --names tsc,api --prefix-colors yellow,blue \"node ./scripts/watch-build.mjs\" \"node --inspect=0.0.0.0:9229 ./scripts/wait-for-build.mjs\"",
     "build": "tsc --project tsconfig.json",

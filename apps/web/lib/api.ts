@@ -24,19 +24,15 @@ import type {
   WorkspaceViewConfig,
   UpdateViewConfigDto,
 } from '@naval/domain';
-import { getServerApiAuthToken, getServerApiBase } from './env';
+import { getServerApiBase, getServerApiHeaders } from './env';
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getServerApiBase()}/api/v1${path}`;
-  const token = getServerApiAuthToken();
+  const headers = await getServerApiHeaders(options?.headers);
 
   const res = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
+    headers,
     // Next.js cache: revalidate every 30 s by default.
     // Individual callers can override via next: { revalidate: ... } or cache: 'no-store'.
     next: { revalidate: 30 },
@@ -59,6 +55,14 @@ export class ApiClientError extends Error {
   ) {
     super(`API ${status} at ${path}: ${body}`);
     this.name = 'ApiClientError';
+  }
+
+  get isUnauthorized(): boolean {
+    return this.status === 401;
+  }
+
+  get isExpiredToken(): boolean {
+    return this.isUnauthorized && this.body.toLowerCase().includes('expired');
   }
 }
 

@@ -15,14 +15,35 @@
  * as NestJS modules or BullMQ workers in Milestone 2+.
  */
 
+import { mkdir, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
+import { assertWorkerRuntimeEnvironment } from './runtime-env';
 
 const prisma = new PrismaClient();
 const DB_STARTUP_RETRIES = 10;
 const DB_RETRY_DELAY_MS = 3_000;
+const readyFile = process.env['WORKER_READY_FILE']?.trim();
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function writeReadyFile() {
+  if (!readyFile) {
+    return;
+  }
+
+  await mkdir(path.dirname(readyFile), { recursive: true });
+  await writeFile(readyFile, new Date().toISOString(), 'utf8');
+}
+
+async function clearReadyFile() {
+  if (!readyFile) {
+    return;
+  }
+
+  await rm(readyFile, { force: true });
 }
 
 async function waitForDatabase() {
@@ -45,8 +66,11 @@ async function waitForDatabase() {
 }
 
 async function main() {
+  assertWorkerRuntimeEnvironment();
+  await clearReadyFile();
   console.log('[worker] Naval Digital Twin Platform — Worker starting...');
   await waitForDatabase();
+  await writeReadyFile();
 
   console.log('[worker] Milestone 1 scaffold ready. Job processors will be registered in M2.');
 
@@ -63,22 +87,29 @@ async function main() {
   // Graceful shutdown
   process.on('SIGINT', () => {
     clearInterval(interval);
-    void prisma.$disconnect().then(() => {
-      console.log('[worker] Shutdown complete');
-      process.exit(0);
-    });
+    void clearReadyFile()
+      .catch(() => undefined)
+      .then(() => prisma.$disconnect())
+      .then(() => {
+        console.log('[worker] Shutdown complete');
+        process.exit(0);
+      });
   });
 
   process.on('SIGTERM', () => {
     clearInterval(interval);
-    void prisma.$disconnect().then(() => {
-      console.log('[worker] Shutdown complete');
-      process.exit(0);
-    });
+    void clearReadyFile()
+      .catch(() => undefined)
+      .then(() => prisma.$disconnect())
+      .then(() => {
+        console.log('[worker] Shutdown complete');
+        process.exit(0);
+      });
   });
 }
 
 main().catch((err) => {
+  void clearReadyFile().catch(() => undefined);
   console.error('[worker] Fatal startup error:', err);
   process.exit(1);
 });

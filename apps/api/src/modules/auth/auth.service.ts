@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { RequestUser } from '../../common/types/request-user.type';
-import { canUseDevAuthFallback } from './auth-env';
 import type { JwtPayload } from './jwt.strategy';
+
+type AuthFailureReason = 'missing' | 'invalid' | 'expired';
+
+type AuthValidationResult =
+  | { ok: true; user: RequestUser }
+  | { ok: false; reason: AuthFailureReason; message: string };
 
 /**
  * Auth service — Milestone 4.
  *
  * JWT verification via passport-jwt is the primary auth mechanism.
- * A dev-token sentinel is retained for local development and testing
- * when JWT_SECRET is not configured (NODE_ENV=development only).
+ * JWT signing and verification require an explicit JWT_SECRET at runtime.
  */
 @Injectable()
 export class AuthService {
@@ -36,61 +40,40 @@ export class AuthService {
   /**
    * Validate a bearer token and return a RequestUser principal.
    *
-   * JWT verification is always attempted first using the configured secret.
-   * If JWT_SECRET is not set, the dev sentinel tokens are also accepted as a
-   * convenience for local development without a full auth setup.
-   *
-   * Returns null if the token is absent or invalid.
+   * Returns an explicit failure reason for missing, invalid, or expired tokens.
    */
-  validateToken(token: string | undefined): RequestUser | null {
-    if (!token) return null;
+  validateToken(token: string | undefined): AuthValidationResult {
+    if (!token) {
+      return { ok: false, reason: 'missing', message: 'Missing bearer token.' };
+    }
 
-    // ── JWT path — always attempted first ─────────────────────────────────
     try {
       const payload = this.jwtService.verify<JwtPayload>(token);
       if (payload.sub && payload.email && payload.organizationId) {
         return {
-          userId: payload.sub,
-          email: payload.email,
-          organizationId: payload.organizationId,
-          role: payload.role ?? 'VIEWER',
+          ok: true,
+          user: {
+            userId: payload.sub,
+            email: payload.email,
+            organizationId: payload.organizationId,
+            role: payload.role ?? 'VIEWER',
+          },
         };
       }
-    } catch {
-      // Token is not a valid JWT — fall through to dev sentinel check.
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TokenExpiredError') {
+        return { ok: false, reason: 'expired', message: 'Bearer token has expired.' };
+      }
+
+      return { ok: false, reason: 'invalid', message: 'Bearer token is invalid.' };
     }
 
-    // ── Dev-token fallback (development only when JWT_SECRET is absent) ─────
-    if (!canUseDevAuthFallback()) {
-      return null;
-    }
-
-    const devUsers: Record<string, RequestUser> = {
-      'dev-token': {
-        userId: 'dev-user-admin',
-        email: 'cmdr.lee@naval-systems.dev',
-        organizationId: 'dev-org',
-        role: 'ADMIN',
-      },
-      'dev-member-token': {
-        userId: 'dev-user-member',
-        email: 'eng.chen@naval-systems.dev',
-        organizationId: 'dev-org',
-        role: 'MEMBER',
-      },
-      'dev-viewer-token': {
-        userId: 'dev-user-viewer',
-        email: 'analyst.kowalski@naval-systems.dev',
-        organizationId: 'dev-org',
-        role: 'VIEWER',
-      },
-    };
-
-    return devUsers[token] ?? null;
+    return { ok: false, reason: 'invalid', message: 'Bearer token payload is incomplete.' };
   }
 
   /** @deprecated Use validateToken instead */
   validateUser(token: string | undefined): RequestUser | null {
-    return this.validateToken(token);
+    const result = this.validateToken(token);
+    return result.ok ? result.user : null;
   }
 }

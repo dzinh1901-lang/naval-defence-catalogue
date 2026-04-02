@@ -5,7 +5,7 @@
   "description": "Naval Digital Twin Platform — background worker for simulation jobs and async processing",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node ./scripts/start-production.mjs",
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit"
   },
