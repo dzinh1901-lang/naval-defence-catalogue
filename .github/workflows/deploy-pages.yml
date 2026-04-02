@@ -36,8 +36,6 @@ jobs:
       - name: Build
         working-directory: legacy/catalogue
         env:
-          VITE_APP_ID: ${{ vars.VITE_APP_ID }}
-          VITE_OAUTH_PORTAL_URL: ${{ vars.VITE_OAUTH_PORTAL_URL }}
           VITE_ANALYTICS_ENDPOINT: ${{ vars.VITE_ANALYTICS_ENDPOINT }}
           VITE_ANALYTICS_WEBSITE_ID: ${{ vars.VITE_ANALYTICS_WEBSITE_ID }}
           VITE_FRONTEND_FORGE_API_KEY: ${{ secrets.VITE_FRONTEND_FORGE_API_KEY }}
