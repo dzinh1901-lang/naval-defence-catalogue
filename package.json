@@ -16,7 +16,9 @@
     "verify:artifacts": "node ./scripts/verify-build-artifacts.mjs",
     "verify:deployment": "node ./scripts/verify-deployment.mjs",
     "verify": "pnpm lint && pnpm db:validate && pnpm db:generate && pnpm typecheck && pnpm build && pnpm verify:artifacts",
+    "verify:release": "pnpm lint && pnpm db:validate && pnpm db:generate && pnpm typecheck && pnpm test && pnpm build && pnpm verify:artifacts && pnpm smoke:startup",
     "smoke:http": "node ./scripts/smoke-check.mjs",
+    "smoke:startup": "node ./scripts/startup-smoke.mjs",
     "smoke:production": "node ./scripts/production-smoke.mjs",
     "db:validate": "DATABASE_URL=${DATABASE_URL:-postgresql://naval:naval_dev@localhost:5432/naval_dt} pnpm --filter @naval/database db:validate",
     "db:generate": "pnpm --filter @naval/database db:generate",
@@ -25,6 +27,7 @@
     "db:migrate:status": "DATABASE_URL=${DATABASE_URL:-postgresql://naval:naval_dev@localhost:5432/naval_dt} pnpm --filter @naval/database db:migrate:status",
     "db:seed": "DATABASE_URL=${DATABASE_URL:-postgresql://naval:naval_dev@localhost:5432/naval_dt} pnpm --filter @naval/database db:seed",
     "db:studio": "DATABASE_URL=${DATABASE_URL:-postgresql://naval:naval_dev@localhost:5432/naval_dt} pnpm --filter @naval/database db:studio",
+    "test": "node --test ./scripts/**/*.test.mjs",
     "format": "prettier --write .",
     "lint": "pnpm -r --filter './apps/*' lint"
   },

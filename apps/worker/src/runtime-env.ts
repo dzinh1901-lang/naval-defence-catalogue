@@ -32,6 +32,9 @@ export function assertWorkerRuntimeEnvironment(): {
 } {
   const databaseUrl = readRequiredEnv('DATABASE_URL');
   const readyFile = process.env['WORKER_READY_FILE']?.trim();
+  if (readyFile && !readyFile.startsWith('/')) {
+    throw new Error('WORKER_READY_FILE must be an absolute path when set.');
+  }
 
   return {
     databaseUrl: parseDatabaseUrl(databaseUrl),

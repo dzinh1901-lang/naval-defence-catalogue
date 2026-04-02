@@ -38,6 +38,10 @@ function normalizeUrl(name: string, value: string): string {
   return parsed.toString().replace(/\/$/, '');
 }
 
+function isContainerOnlyHostname(hostname: string): boolean {
+  return !hostname.includes('.') && !['localhost', '127.0.0.1', '::1'].includes(hostname);
+}
+
 export function getServerApiBase(): string {
   const base = getFirstConfiguredValue(process.env['API_URL'], process.env['NEXT_PUBLIC_API_URL']);
   if (!base) {
@@ -66,6 +70,9 @@ function getServiceAuthConfig(): ServiceAuthConfig | null {
   if (!serviceRoles.includes(configuredValues['API_SERVICE_ROLE']! as (typeof serviceRoles)[number])) {
     throw new Error('API_SERVICE_ROLE must be one of ADMIN, MEMBER, or VIEWER.');
   }
+  if (configuredValues['AUTH_BOOTSTRAP_SECRET']!.length < 8) {
+    throw new Error('AUTH_BOOTSTRAP_SECRET must be at least 8 characters when bootstrap auth is configured.');
+  }
 
   return {
     bootstrapSecret: configuredValues['AUTH_BOOTSTRAP_SECRET']!,
@@ -85,7 +92,12 @@ export function assertWebRuntimeEnvironment(): void {
       'NEXT_PUBLIC_API_URL is not configured. Set NEXT_PUBLIC_API_URL so browser-visible URLs stay explicit in production.',
     );
   }
-  normalizeUrl('NEXT_PUBLIC_API_URL', publicApiUrl);
+  const normalizedPublicApiUrl = normalizeUrl('NEXT_PUBLIC_API_URL', publicApiUrl);
+  if (isContainerOnlyHostname(new URL(normalizedPublicApiUrl).hostname)) {
+    throw new Error(
+      `NEXT_PUBLIC_API_URL must be browser-reachable. Container-only hostnames such as "${new URL(normalizedPublicApiUrl).hostname}" are not valid public URLs.`,
+    );
+  }
 
   if (getFirstConfiguredValue(process.env['NEXT_PUBLIC_API_AUTH_TOKEN'])) {
     throw new Error(

@@ -40,12 +40,24 @@ async function bootstrap() {
   await app.listen(runtimeConfig.port);
   logger.log(
     `🚀 Naval DTP API listening ${JSON.stringify({
-      apiBaseUrl: `http://localhost:${runtimeConfig.port}/api/v1`,
-      healthUrl: `http://localhost:${runtimeConfig.port}/api/v1/health`,
-      liveUrl: `http://localhost:${runtimeConfig.port}/api/v1/health/live`,
-      readyUrl: `http://localhost:${runtimeConfig.port}/api/v1/health/ready`,
+      port: runtimeConfig.port,
+      apiBasePath: '/api/v1',
+      healthPaths: {
+        status: '/api/v1/health',
+        live: '/api/v1/health/live',
+        ready: '/api/v1/health/ready',
+      },
     })}`,
   );
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error(
+    JSON.stringify({
+      service: 'api',
+      status: 'startup-failed',
+      message: error instanceof Error ? error.message : String(error),
+    }),
+  );
+  process.exit(1);
+});

@@ -2,71 +2,46 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  describeHttpEndpoint,
+  formatStartupFailure,
+  getNodeEnvironment,
+  parsePort,
+  readRequiredEnv,
+  validateWebAuthConfig,
+} from '../../../scripts/startup-runtime.mjs';
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const entrypoint = path.join(appDir, '..', '.next', 'standalone', 'apps', 'web', 'server.js');
-const serviceAuthFields = [
-  'AUTH_BOOTSTRAP_SECRET',
-  'API_SERVICE_USER_ID',
-  'API_SERVICE_EMAIL',
-  'API_SERVICE_ORGANIZATION_ID',
-  'API_SERVICE_ROLE',
-];
-
-function readConfiguredEnv(name) {
-  return process.env[name]?.trim();
-}
-
-function readRequiredEnv(name) {
-  const value = readConfiguredEnv(name);
-  if (!value) {
-    throw new Error(`${name} must be set before starting the web app in production mode.`);
-  }
-
-  return value;
-}
-
-function normalizeUrl(name) {
-  const value = readRequiredEnv(name);
-
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    throw new Error(`${name} must be a valid absolute URL. Received "${value}".`);
-  }
-
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
-    throw new Error(`${name} must use http:// or https://. Received "${value}".`);
-  }
-
-  return parsed.toString().replace(/\/$/, '');
-}
 
 function assertWebRuntimeEnvironment() {
-  normalizeUrl('API_URL');
-  normalizeUrl('NEXT_PUBLIC_API_URL');
+  const environment = getNodeEnvironment(process.env);
+  const apiUrl = describeHttpEndpoint(
+    'API_URL',
+    readRequiredEnv(process.env, 'API_URL', 'web'),
+  );
+  const publicApiUrl = describeHttpEndpoint(
+    'NEXT_PUBLIC_API_URL',
+    readRequiredEnv(process.env, 'NEXT_PUBLIC_API_URL', 'web'),
+    { publicEndpoint: true },
+  );
 
-  if (readConfiguredEnv('NEXT_PUBLIC_API_AUTH_TOKEN')) {
+  if (process.env['NEXT_PUBLIC_API_AUTH_TOKEN']?.trim()) {
     throw new Error(
       'NEXT_PUBLIC_API_AUTH_TOKEN is no longer supported. Use API_AUTH_TOKEN or AUTH_BOOTSTRAP_SECRET + API_SERVICE_* for server-side API access.',
     );
   }
 
-  const apiAuthToken = readConfiguredEnv('API_AUTH_TOKEN');
-  const configuredBootstrapFields = serviceAuthFields.filter((name) => readConfiguredEnv(name));
+  const authMode = validateWebAuthConfig(process.env);
+  const port = parsePort(process.env, 3000);
 
-  if (configuredBootstrapFields.length > 0 && configuredBootstrapFields.length !== serviceAuthFields.length) {
-    throw new Error(
-      `To bootstrap a server-side API token, set all of ${serviceAuthFields.join(', ')} together.`,
-    );
-  }
-
-  if (!apiAuthToken && configuredBootstrapFields.length !== serviceAuthFields.length) {
-    throw new Error(
-      'Configure API_AUTH_TOKEN or AUTH_BOOTSTRAP_SECRET + API_SERVICE_* before starting the web app in production mode.',
-    );
-  }
+  return {
+    apiUrl,
+    publicApiUrl,
+    authMode,
+    environment,
+    port,
+  };
 }
 
 async function main() {
@@ -76,14 +51,18 @@ async function main() {
     );
   });
 
-  assertWebRuntimeEnvironment();
+  const runtimeConfig = assertWebRuntimeEnvironment();
   console.log(
-    `[web] Launching production runtime ${JSON.stringify({
-      environment: process.env['NODE_ENV'] ?? 'production',
-      port: Number(process.env['PORT'] ?? '3000'),
-      apiUrl: normalizeUrl('API_URL'),
-      publicApiUrl: normalizeUrl('NEXT_PUBLIC_API_URL'),
-      authMode: readConfiguredEnv('API_AUTH_TOKEN') ? 'token' : 'bootstrap',
+    `[web] Startup checks passed ${JSON.stringify({
+      environment: runtimeConfig.environment,
+      port: runtimeConfig.port,
+      apiUrl: runtimeConfig.apiUrl,
+      publicApiUrl: runtimeConfig.publicApiUrl,
+      authMode: runtimeConfig.authMode,
+      healthPaths: {
+        live: '/api/health/live',
+        ready: '/api/health/ready',
+      },
     })}`,
   );
 
@@ -91,6 +70,14 @@ async function main() {
     stdio: 'inherit',
     env: process.env,
   });
+
+  const forwardSignal = (signal) => {
+    if (!child.killed && child.exitCode === null) {
+      child.kill(signal);
+    }
+  };
+  process.once('SIGINT', () => forwardSignal('SIGINT'));
+  process.once('SIGTERM', () => forwardSignal('SIGTERM'));
 
   child.on('exit', (code, signal) => {
     if (signal) {
@@ -103,6 +90,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error(formatStartupFailure('web', error));
   process.exit(1);
 });

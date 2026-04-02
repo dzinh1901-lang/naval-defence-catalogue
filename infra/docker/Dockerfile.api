@@ -9,6 +9,7 @@ RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 # Copy workspace manifests
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY patches/ ./patches/
+COPY scripts/startup-runtime.mjs ./scripts/
 COPY packages/config/package.json ./packages/config/
 COPY packages/domain/package.json ./packages/domain/
 COPY packages/database/package.json ./packages/database/
@@ -41,6 +42,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/scripts/start-production.mjs ./apps/api/scripts/start-production.mjs
+COPY --from=builder /app/scripts/startup-runtime.mjs ./scripts/startup-runtime.mjs
 
 ENV NODE_ENV=production
 ENV PORT=4000
