@@ -18,16 +18,35 @@
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+const DB_STARTUP_RETRIES = 10;
+const DB_RETRY_DELAY_MS = 3_000;
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForDatabase() {
+  for (let attempt = 1; attempt <= DB_STARTUP_RETRIES; attempt++) {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      console.log('[worker] Database connection OK');
+      return;
+    } catch (error) {
+      if (attempt === DB_STARTUP_RETRIES) {
+        throw error;
+      }
+
+      console.warn(
+        `[worker] Database not reachable (attempt ${attempt}/${DB_STARTUP_RETRIES}); retrying in ${DB_RETRY_DELAY_MS}ms...`,
+      );
+      await sleep(DB_RETRY_DELAY_MS);
+    }
+  }
+}
 
 async function main() {
   console.log('[worker] Naval Digital Twin Platform — Worker starting...');
-
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    console.log('[worker] Database connection OK');
-  } catch (err) {
-    console.warn('[worker] Database not reachable — worker will retry passively.', err);
-  }
+  await waitForDatabase();
 
   console.log('[worker] Milestone 1 scaffold ready. Job processors will be registered in M2.');
 

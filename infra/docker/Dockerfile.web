@@ -19,8 +19,6 @@ COPY packages/domain/ ./packages/domain/
 COPY packages/ui/ ./packages/ui/
 COPY apps/web/ ./apps/web/
 
-RUN pnpm install --frozen-lockfile
-
 # Set API URL for production build
 ENV NEXT_PUBLIC_API_URL=http://api:4000
 
