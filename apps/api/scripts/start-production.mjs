@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url';
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const entrypoint = path.join(appDir, '..', 'dist', 'main.js');
 
+function formatDatabaseTarget(connectionString) {
+  const parsed = new URL(connectionString);
+  return `${parsed.hostname}:${parsed.port || '5432'}${parsed.pathname}`;
+}
+
 function readRequiredEnv(name) {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -45,6 +50,15 @@ async function main() {
   });
 
   assertApiRuntimeEnvironment();
+  console.log(
+    `[api] Launching production runtime ${JSON.stringify({
+      environment: process.env['NODE_ENV'] ?? 'production',
+      port: Number(process.env['PORT'] ?? '4000'),
+      databaseTarget: formatDatabaseTarget(readRequiredEnv('DATABASE_URL')),
+      bootstrapAuthEnabled: Boolean(process.env['AUTH_BOOTSTRAP_SECRET']?.trim()),
+      readyUrl: `/api/v1/health/ready`,
+    })}`,
+  );
 
   const child = spawn(process.execPath, [entrypoint], {
     stdio: 'inherit',

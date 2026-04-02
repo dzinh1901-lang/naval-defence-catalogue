@@ -14,6 +14,7 @@
     "build:api": "pnpm --filter @naval/api build",
     "typecheck": "pnpm -r --filter './apps/*' --filter './packages/*' typecheck",
     "verify:artifacts": "node ./scripts/verify-build-artifacts.mjs",
+    "verify:deployment": "node ./scripts/verify-deployment.mjs",
     "verify": "pnpm lint && pnpm db:validate && pnpm db:generate && pnpm typecheck && pnpm build && pnpm verify:artifacts",
     "smoke:http": "node ./scripts/smoke-check.mjs",
     "smoke:production": "node ./scripts/production-smoke.mjs",

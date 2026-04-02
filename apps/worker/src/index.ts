@@ -18,7 +18,7 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
-import { assertWorkerRuntimeEnvironment } from './runtime-env';
+import { assertWorkerRuntimeEnvironment, formatWorkerDatabaseTarget } from './runtime-env';
 
 const prisma = new PrismaClient();
 const DB_STARTUP_RETRIES = 10;
@@ -66,12 +66,25 @@ async function waitForDatabase() {
 }
 
 async function main() {
-  assertWorkerRuntimeEnvironment();
+  const runtimeConfig = assertWorkerRuntimeEnvironment();
   await clearReadyFile();
+  console.log(
+    `[worker] Startup checks passed ${JSON.stringify({
+      environment: process.env['NODE_ENV'] ?? 'development',
+      databaseTarget: formatWorkerDatabaseTarget(runtimeConfig.databaseUrl),
+      readyFile: runtimeConfig.readyFile ?? 'disabled',
+    })}`,
+  );
   console.log('[worker] Naval Digital Twin Platform — Worker starting...');
   await waitForDatabase();
   await writeReadyFile();
 
+  console.log(
+    `[worker] Ready ${JSON.stringify({
+      database: 'ok',
+      readyFile: runtimeConfig.readyFile ?? 'disabled',
+    })}`,
+  );
   console.log('[worker] Milestone 1 scaffold ready. Job processors will be registered in M2.');
 
   // Heartbeat — keeps process alive, simulates a poll loop
@@ -110,6 +123,6 @@ async function main() {
 
 main().catch((err) => {
   void clearReadyFile().catch(() => undefined);
-  console.error('[worker] Fatal startup error:', err);
+  console.error('[worker] Fatal startup error:', err instanceof Error ? err.stack ?? err.message : err);
   process.exit(1);
 });

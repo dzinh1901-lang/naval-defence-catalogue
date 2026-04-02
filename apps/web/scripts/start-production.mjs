@@ -26,9 +26,26 @@ function readRequiredEnv(name) {
   return value;
 }
 
+function normalizeUrl(name) {
+  const value = readRequiredEnv(name);
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${name} must be a valid absolute URL. Received "${value}".`);
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`${name} must use http:// or https://. Received "${value}".`);
+  }
+
+  return parsed.toString().replace(/\/$/, '');
+}
+
 function assertWebRuntimeEnvironment() {
-  readRequiredEnv('API_URL');
-  readRequiredEnv('NEXT_PUBLIC_API_URL');
+  normalizeUrl('API_URL');
+  normalizeUrl('NEXT_PUBLIC_API_URL');
 
   if (readConfiguredEnv('NEXT_PUBLIC_API_AUTH_TOKEN')) {
     throw new Error(
@@ -60,6 +77,15 @@ async function main() {
   });
 
   assertWebRuntimeEnvironment();
+  console.log(
+    `[web] Launching production runtime ${JSON.stringify({
+      environment: process.env['NODE_ENV'] ?? 'production',
+      port: Number(process.env['PORT'] ?? '3000'),
+      apiUrl: normalizeUrl('API_URL'),
+      publicApiUrl: normalizeUrl('NEXT_PUBLIC_API_URL'),
+      authMode: readConfiguredEnv('API_AUTH_TOKEN') ? 'token' : 'bootstrap',
+    })}`,
+  );
 
   const child = spawn(process.execPath, [entrypoint], {
     stdio: 'inherit',

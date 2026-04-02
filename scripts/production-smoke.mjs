@@ -191,8 +191,22 @@ async function main() {
     const apiBase = 'http://localhost:4400';
     const webBase = 'http://localhost:3300';
 
-    const healthBody = await waitFor(async () => {
-      const response = await fetch(`${apiBase}/api/v1/health`);
+    const liveBody = await waitFor(async () => {
+      const response = await fetch(`${apiBase}/api/v1/health/live`);
+      if (!response.ok) {
+        return null;
+      }
+
+      const body = await response.json();
+      if (body?.status === 'ok' && body?.signal === 'live') {
+        return body;
+      }
+
+      return null;
+    }, 'API live endpoint');
+
+    const readyBody = await waitFor(async () => {
+      const response = await fetch(`${apiBase}/api/v1/health/ready`);
       if (!response.ok) {
         return null;
       }
@@ -203,7 +217,7 @@ async function main() {
       }
 
       return null;
-    }, 'API health endpoint');
+    }, 'API readiness endpoint');
 
     await waitFor(async () => {
       const response = await fetch(webBase);
@@ -286,8 +300,58 @@ async function main() {
       throw new Error(`Web project route did not render "${primaryProject.name}".`);
     }
 
+    const projectDetailResponse = await httpExpect(`${apiBase}/api/v1/projects/${primaryProject.id}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const projectDetail = JSON.parse(projectDetailResponse.body);
+    const firstTwinId = projectDetail?.twins?.[0]?.id;
+    if (!firstTwinId) {
+      throw new Error(`Expected project "${primaryProject.name}" to include at least one twin.`);
+    }
+
+    const workspaceSummaryResponse = await httpExpect(`${apiBase}/api/v1/workspace/${firstTwinId}`);
+    const workspaceSummary = JSON.parse(workspaceSummaryResponse.body);
+    if (workspaceSummary?.project?.id !== primaryProject.id) {
+      throw new Error(`Workspace summary did not resolve back to project "${primaryProject.id}".`);
+    }
+
+    const currentViewConfigResponse = await httpExpect(`${apiBase}/api/v1/workspace/${firstTwinId}/view-config`);
+    const currentViewConfig = JSON.parse(currentViewConfigResponse.body);
+    const viewConfigPayload = {
+      selectedMaterialId:
+        currentViewConfig?.selectedMaterialId ?? currentViewConfig?.selectedMaterial?.id ?? null,
+      selectedLightingId:
+        currentViewConfig?.selectedLightingId ?? currentViewConfig?.selectedLighting?.id ?? null,
+      camDof: currentViewConfig?.camDof ?? 3,
+      camFstop: currentViewConfig?.camFstop ?? 30,
+    };
+
+    const proxyViewConfigResponse = await httpExpect(
+      `${webBase}/api/workspace/${firstTwinId}/view-config`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(viewConfigPayload),
+      },
+    );
+    const proxyViewConfig = JSON.parse(proxyViewConfigResponse.body);
+    if (proxyViewConfig?.twinId !== firstTwinId) {
+      throw new Error('Workspace proxy mutation did not persist the expected twin configuration.');
+    }
+
+    const twinPage = await httpExpect(`${webBase}/projects/${primaryProject.id}/twins/${firstTwinId}`);
+    if (!twinPage.body.includes(workspaceSummary?.twin?.name ?? '')) {
+      throw new Error(
+        `Web twin route did not render "${workspaceSummary?.twin?.name ?? firstTwinId}".`,
+      );
+    }
+
     const workerLogs = await run('docker', ['compose', '-f', composeFile, '-p', composeProject, 'logs', 'worker']);
-    if (!workerLogs.includes('Database connection OK') || !workerLogs.includes('Milestone 1 scaffold ready')) {
+    if (
+      !workerLogs.includes('Database connection OK') ||
+      !workerLogs.includes('Milestone 1 scaffold ready') ||
+      !workerLogs.includes('Startup checks passed')
+    ) {
       throw new Error('Worker logs did not confirm database-ready production startup.');
     }
 
@@ -297,9 +361,11 @@ async function main() {
         {
           apiBase,
           webBase,
-          health: healthBody,
+          live: liveBody,
+          ready: readyBody,
           projectId: primaryProject.id,
           projectName: primaryProject.name,
+          twinId: firstTwinId,
         },
         null,
         2,
