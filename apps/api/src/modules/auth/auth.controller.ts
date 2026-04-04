@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import type { RequestUser } from '../../common/types/request-user.type';
+import { isBootstrapAuthEnabled } from './auth-env';
 
 // Seeded service principals use stable slug-like IDs (for example `dev-user-admin`),
 // so token bootstrap validation accepts the same alphanumeric + hyphen format.
@@ -64,6 +65,12 @@ export class AuthController {
     if (!expected) {
       throw new ServiceUnavailableException(
         'AUTH_BOOTSTRAP_SECRET is not configured on this API instance.',
+      );
+    }
+
+    if (process.env['NODE_ENV'] === 'production' && !isBootstrapAuthEnabled()) {
+      throw new ServiceUnavailableException(
+        'Bootstrap token issuance is disabled in production. Configure API_AUTH_TOKEN or a real identity provider instead.',
       );
     }
 

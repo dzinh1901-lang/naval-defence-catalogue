@@ -19,8 +19,11 @@
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Must be a valid `postgresql://` or `postgres://` URL. Required before API boot. |
 | `JWT_SECRET` | Yes | Minimum 32 characters. API refuses to boot without it. |
+| `JWT_EXPIRES_IN_SECS` | Optional | Defaults to `28800` (8 hours). Must be an integer between 300 and 2592000 when set. |
 | `PORT` | Optional | Must be an integer between 1 and 65535. Defaults to `4000`. |
+| `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated absolute `http(s)` origins allowed to call the API directly from browsers. Leave unset to deny cross-origin browser access by default. |
 | `AUTH_BOOTSTRAP_SECRET` | Conditional | Minimum 8 characters when set. Required only if the web runtime bootstraps its own API token. |
+| `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE` | Conditional | Defaults to `false`. In `production`, set to `true` only when bootstrap token issuance is intentionally allowed in a tightly controlled environment. |
 | `NODE_ENV` | Recommended | Must be one of `development`, `test`, `smoke`, `staging`, or `production`. Set `production` in deployed environments for predictable logging/runtime behaviour. |
 
 ### Web
@@ -51,6 +54,7 @@
 - Authenticated release verification relies on either:
   - `API_AUTH_TOKEN`, or
   - `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*`.
+- In `production`, bootstrap token issuance remains disabled unless `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE=true` is explicitly set.
 - If a real identity provider is introduced later, callback URL registration becomes a new deployment prerequisite and should be added to this contract before rollout.
 
 ## Deployment-safe migration order
@@ -60,7 +64,8 @@
 3. Run `pnpm db:migrate:status` against the target database.
 4. Start or roll the API and worker using the migrated schema.
 5. Start or roll the web app with the final API URLs/auth settings.
-6. Run staging or production verification before promotion/traffic cutover.
+6. Keep workspace endpoints authenticated in deployed environments; do not expose `/api/v1/workspace/*` publicly unless the data set is intentionally demo-only.
+7. Run staging or production verification before promotion/traffic cutover.
 
 ### Failure modes
 
@@ -154,7 +159,7 @@ What it verifies:
 - authenticated `/api/v1/auth/me`
 - authenticated `/api/v1/projects`
 - data-backed `/api/v1/projects/:id`
-- data-backed `/api/v1/workspace/:twinId`
+- authenticated data-backed `/api/v1/workspace/:twinId`
 - authenticated web proxy mutation via `/api/workspace/:twinId/view-config`
 - web project/twin routes
 - captured HTTP artifacts under `artifacts/deployment-verification/`

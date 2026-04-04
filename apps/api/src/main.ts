@@ -2,14 +2,27 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
+import helmet from 'helmet';
 import { assertApiRuntimeEnvironment, formatDatabaseTarget } from './config/runtime-env';
 import { AppModule } from './app.module';
-import { assertAuthEnvironment } from './modules/auth/auth-env';
+import { assertAuthEnvironment, isBootstrapAuthEnabled } from './modules/auth/auth-env';
 
 async function bootstrap() {
   const runtimeConfig = assertApiRuntimeEnvironment();
   assertAuthEnvironment();
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, cors: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
+  app.enableCors({
+    origin: runtimeConfig.corsAllowedOrigins.length > 0 ? runtimeConfig.corsAllowedOrigins : false,
+    credentials: true,
+  });
 
   // Use structured Pino logger for all NestJS internal log output.
   app.useLogger(app.get(Logger));
@@ -20,7 +33,9 @@ async function bootstrap() {
       environment: process.env['NODE_ENV'] ?? 'development',
       port: runtimeConfig.port,
       databaseTarget: formatDatabaseTarget(runtimeConfig.databaseUrl),
-      bootstrapAuthEnabled: Boolean(process.env['AUTH_BOOTSTRAP_SECRET']?.trim()),
+      bootstrapAuthConfigured: Boolean(process.env['AUTH_BOOTSTRAP_SECRET']?.trim()),
+      bootstrapAuthEnabled: isBootstrapAuthEnabled(),
+      corsAllowedOrigins: runtimeConfig.corsAllowedOrigins,
     })}`,
   );
 

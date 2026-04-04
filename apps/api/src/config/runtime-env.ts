@@ -26,14 +26,36 @@ export function formatDatabaseTarget(url: URL): string {
   return `${url.hostname}:${url.port || '5432'}${url.pathname}`;
 }
 
-export function assertApiRuntimeEnvironment(): { databaseUrl: URL; port: number } {
+function parseCorsOrigins(value: string | undefined): string[] {
+  if (!value) return [];
+
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      try {
+        const parsed = new URL(origin);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          throw new Error();
+        }
+        return parsed.origin;
+      } catch {
+        throw new Error(`CORS_ALLOWED_ORIGINS must contain valid absolute http(s) origins. Received "${origin}".`);
+      }
+    });
+}
+
+export function assertApiRuntimeEnvironment(): { databaseUrl: URL; port: number; corsAllowedOrigins: string[] } {
   const databaseUrl = parseDatabaseUrl(readRequiredEnv('DATABASE_URL'));
+  const corsAllowedOrigins = parseCorsOrigins(process.env['CORS_ALLOWED_ORIGINS']);
 
   const configuredPort = process.env['PORT']?.trim();
   if (!configuredPort) {
     return {
       databaseUrl,
       port: 4000,
+      corsAllowedOrigins,
     };
   }
 
@@ -45,5 +67,6 @@ export function assertApiRuntimeEnvironment(): { databaseUrl: URL; port: number 
   return {
     databaseUrl,
     port,
+    corsAllowedOrigins,
   };
 }

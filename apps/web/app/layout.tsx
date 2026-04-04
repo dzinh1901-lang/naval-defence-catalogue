@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: '%s — Naval DTP',
   },
   description:
-    'Engineering workspace for naval defence digital twins: system definition, requirements traceability, and simulation orchestration.',
+    'Digital twin workspace for naval engineering teams: system definition, requirements traceability, evidence-backed reviews, and simulation coordination.',
   robots: { index: false, follow: false },
 };
 
