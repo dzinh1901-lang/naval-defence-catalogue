@@ -171,6 +171,34 @@ export function validateWebAuthConfig(env) {
   return explicitToken ? 'token' : 'bootstrap';
 }
 
+export function parseCorsOrigins(env) {
+  const raw = env['CORS_ALLOWED_ORIGINS']?.trim();
+  if (!raw) return [];
+
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      let parsed;
+      try {
+        parsed = new URL(origin);
+      } catch {
+        throw new Error(
+          `CORS_ALLOWED_ORIGINS must contain valid absolute http(s) origins. Received "${origin}".`,
+        );
+      }
+
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error(
+          `CORS_ALLOWED_ORIGINS must contain valid absolute http(s) origins. Received "${origin}".`,
+        );
+      }
+
+      return parsed.origin;
+    });
+}
+
 export function formatStartupFailure(service, error) {
   const message = error instanceof Error ? error.message : String(error);
   return JSON.stringify({

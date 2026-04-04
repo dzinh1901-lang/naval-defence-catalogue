@@ -4,6 +4,7 @@ import {
   describeHttpEndpoint,
   formatDatabaseTarget,
   getNodeEnvironment,
+  parseCorsOrigins,
   parseDatabaseUrl,
   parsePort,
   readOptionalReadyFile,
@@ -68,4 +69,44 @@ test('validateWebAuthConfig accepts explicit tokens or full bootstrap configurat
       }),
     /at least 8 characters/,
   );
+});
+
+test('parseCorsOrigins returns empty array when CORS_ALLOWED_ORIGINS is not set', () => {
+  assert.deepEqual(parseCorsOrigins({}), []);
+  assert.deepEqual(parseCorsOrigins({ CORS_ALLOWED_ORIGINS: '' }), []);
+  assert.deepEqual(parseCorsOrigins({ CORS_ALLOWED_ORIGINS: '   ' }), []);
+});
+
+test('parseCorsOrigins parses a single valid origin', () => {
+  assert.deepEqual(parseCorsOrigins({ CORS_ALLOWED_ORIGINS: 'https://auren-workspace.com' }), [
+    'https://auren-workspace.com',
+  ]);
+});
+
+test('parseCorsOrigins parses multiple comma-separated origins', () => {
+  assert.deepEqual(
+    parseCorsOrigins({
+      CORS_ALLOWED_ORIGINS:
+        'https://auren-workspace.com,https://byte.dns-parking.com,https://pixel.dns-parking.com',
+    }),
+    ['https://auren-workspace.com', 'https://byte.dns-parking.com', 'https://pixel.dns-parking.com'],
+  );
+});
+
+test('parseCorsOrigins trims whitespace around entries', () => {
+  assert.deepEqual(
+    parseCorsOrigins({ CORS_ALLOWED_ORIGINS: '  https://auren-workspace.com , https://byte.dns-parking.com  ' }),
+    ['https://auren-workspace.com', 'https://byte.dns-parking.com'],
+  );
+});
+
+test('parseCorsOrigins rejects non-http(s) protocols', () => {
+  assert.throws(
+    () => parseCorsOrigins({ CORS_ALLOWED_ORIGINS: 'ftp://auren-workspace.com' }),
+    /valid absolute http\(s\) origins/,
+  );
+});
+
+test('parseCorsOrigins rejects invalid URLs', () => {
+  assert.throws(() => parseCorsOrigins({ CORS_ALLOWED_ORIGINS: 'not-a-url' }), /valid absolute http\(s\) origins/);
 });
