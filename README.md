@@ -217,7 +217,7 @@ The API uses JWT-based authentication via `@nestjs/passport` and `passport-jwt`.
 |---|---|---|
 | `JWT_SECRET` | API runtime | HS256 signing secret (min 32 chars). The API refuses to boot if it is missing or too short. |
 | `JWT_EXPIRES_IN_SECS` | Optional | Token lifetime in seconds (default: 28800 = 8 hours). |
-| `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated browser origins allowed to call the API directly. Leave unset when the API should not accept direct browser cross-origin traffic. |
+| `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated browser origins allowed to call the API directly. Leave unset when the API should not accept direct browser cross-origin traffic. Production example: `https://auren-workspace.com,https://byte.dns-parking.com,https://pixel.dns-parking.com` |
 | `AUTH_BOOTSTRAP_SECRET` | Web/API bootstrap | Secret for `POST /auth/token` — service-account token issuance. Must be at least 8 characters when set. |
 | `API_URL` | Web runtime | Server-side base URL used by the Next.js app to call the API. |
 | `NEXT_PUBLIC_API_URL` | Browser runtime | Browser-visible API base URL. |
