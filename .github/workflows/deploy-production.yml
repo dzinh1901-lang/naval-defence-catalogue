@@ -23,6 +23,7 @@ jobs:
     name: Deploy to production
     runs-on: ubuntu-latest
     environment: production
+    if: ${{ github.event.repository.default_branch == 'main' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,14 +53,15 @@ jobs:
         env:
           DEPLOY_HOOK_URL: ${{ secrets.PRODUCTION_DEPLOY_HOOK_URL }}
         run: |
-          if [ -n "${DEPLOY_HOOK_URL}" ]; then
-            curl -fsSL -X POST "${DEPLOY_HOOK_URL}" \
-              -H "Content-Type: application/json" \
-              -d "{\"tag\": \"${{ github.event.inputs.image_tag }}\"}"
-          else
-            echo "No PRODUCTION_DEPLOY_HOOK_URL secret set – skipping remote deploy hook."
-            echo "Configure PRODUCTION_DEPLOY_HOOK_URL in the production environment secrets to automate deployment."
+          if [ -z "${DEPLOY_HOOK_URL}" ]; then
+            echo "PRODUCTION_DEPLOY_HOOK_URL is required for production deployment."
+            echo "Configure it in the production environment secrets before running this workflow."
+            exit 1
           fi
+
+          curl -fsSL -X POST "${DEPLOY_HOOK_URL}" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag\": \"${{ github.event.inputs.image_tag }}\"}"
 
       - name: Set up Node.js
         if: ${{ vars.DEPLOYMENT_VERIFY_API_URL != '' }}

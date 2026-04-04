@@ -331,6 +331,7 @@ pnpm smoke:production
 See `docs/release-checklist.md` for the concise release gate and deployment assumptions.
 See `docs/release-notes/production-smoke-hardening.md` for rollout-focused notes, rollback guidance, and follow-up items.
 See `docs/deployment-readiness.md` for the explicit env contract, staging verification workflow, migration order, rollback expectations, and operator troubleshooting.
+See `docs/production-deploy-setup.md` for the exact GitHub environments, secrets, variables, image tags, and workflow order required before staging/production deployment.
 
 ---
 
