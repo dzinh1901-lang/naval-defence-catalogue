@@ -77,6 +77,7 @@ Production/staging runtimes must be compatible with these defaults:
 - `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE=false` unless intentionally required
 - `JWT_EXPIRES_IN_SECS` defaults to 8 hours
 - `CORS_ALLOWED_ORIGINS` must be explicitly set if direct browser cross-origin API access is required
+  - Production domains: `https://auren-workspace.com,https://byte.dns-parking.com,https://pixel.dns-parking.com`
 - `/api/v1/workspace/*` endpoints now require authentication
 
 ## Go / no-go checks
