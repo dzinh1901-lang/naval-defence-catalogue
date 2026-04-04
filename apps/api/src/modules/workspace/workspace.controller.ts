@@ -1,7 +1,6 @@
 import { Body, Controller, Get, NotFoundException, Param, Patch } from '@nestjs/common';
 import { WorkspaceService } from './workspace.service';
 import { UpdateViewConfigDto } from './dto/update-view-config.dto';
-import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('workspace')
@@ -13,7 +12,7 @@ export class WorkspaceController {
    * Full workspace summary: twin, project, view-config, counts, presets.
    */
   @Get(':twinId')
-  @Public()
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
   async getSummary(@Param('twinId') twinId: string) {
     const summary = await this.service.getSummary(twinId);
     if (!summary.twin) throw new NotFoundException(`DigitalTwin ${twinId} not found`);
@@ -25,7 +24,7 @@ export class WorkspaceController {
    * Viewport hotspot definitions for the vessel.
    */
   @Get(':twinId/hotspots')
-  @Public()
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
   getHotspots(@Param('twinId') twinId: string) {
     return this.service.getHotspots(twinId);
   }
@@ -35,7 +34,7 @@ export class WorkspaceController {
    * Active alert events for the twin.
    */
   @Get(':twinId/alerts')
-  @Public()
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
   getAlerts(@Param('twinId') twinId: string) {
     return this.service.getAlerts(twinId);
   }
@@ -45,7 +44,7 @@ export class WorkspaceController {
    * Activity log / history feed for the twin.
    */
   @Get(':twinId/history')
-  @Public()
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
   getHistory(@Param('twinId') twinId: string) {
     return this.service.getHistory(twinId);
   }
@@ -56,7 +55,7 @@ export class WorkspaceController {
    * Returns null (200) when no config has been saved yet — callers apply defaults.
    */
   @Get(':twinId/view-config')
-  @Public()
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
   getViewConfig(@Param('twinId') twinId: string) {
     return this.service.getViewConfig(twinId);
   }

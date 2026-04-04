@@ -19,6 +19,7 @@ pnpm smoke:production
   - `DATABASE_URL` uses `postgresql://` or `postgres://`
   - `JWT_SECRET` is set and at least 32 characters
   - `AUTH_BOOTSTRAP_SECRET` is at least 8 characters when used
+  - `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE` remains `false` in production unless explicitly required for a tightly controlled deployment
 - Web:
   - `API_URL` is the server-side/internal API address
   - `NEXT_PUBLIC_API_URL` is browser-reachable and not a container-only hostname
@@ -45,7 +46,8 @@ pnpm smoke:production
 3. Confirm `pnpm db:migrate:status` is clean.
 4. Roll API and worker first, then roll web with final API URLs/auth config.
 5. Confirm auth bootstrap or token-based access works with `/api/v1/auth/me`.
-6. Archive startup-smoke and production-smoke artifacts with the release record.
+6. Confirm `/api/v1/workspace/:twinId` requires authentication in non-demo deployments.
+7. Archive startup-smoke and production-smoke artifacts with the release record.
 
 ## Residual risks
 
