@@ -179,6 +179,12 @@ export default defineConfig({
       ".manusvm.computer",
       "localhost",
       "127.0.0.1",
+      "auren-workspace.com",
+      ".auren-workspace.com",
+      "byte.dns-parking.com",
+      ".byte.dns-parking.com",
+      "pixel.dns-parking.com",
+      ".pixel.dns-parking.com",
     ],
     fs: {
       strict: true,
