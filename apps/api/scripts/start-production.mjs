@@ -6,6 +6,7 @@ import {
   formatDatabaseTarget,
   formatStartupFailure,
   getNodeEnvironment,
+  parseCorsOrigins,
   parseDatabaseUrl,
   parsePort,
   readRequiredEnv,
@@ -29,11 +30,13 @@ function assertApiRuntimeEnvironment() {
   }
 
   const port = parsePort(process.env, 4000);
+  const corsAllowedOrigins = parseCorsOrigins(process.env);
 
   return {
     databaseUrl,
     environment,
     port,
+    corsAllowedOrigins,
   };
 }
 
@@ -51,6 +54,7 @@ async function main() {
       port: runtimeConfig.port,
       databaseTarget: formatDatabaseTarget(runtimeConfig.databaseUrl),
       bootstrapAuthEnabled: Boolean(process.env['AUTH_BOOTSTRAP_SECRET']?.trim()),
+      corsAllowedOrigins: runtimeConfig.corsAllowedOrigins,
       healthPaths: {
         status: '/api/v1/health',
         live: '/api/v1/health/live',
