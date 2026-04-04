@@ -19,6 +19,20 @@ export function isBootstrapAuthEnabled(): boolean {
   return process.env['ALLOW_BOOTSTRAP_TOKEN_ISSUANCE']?.trim() === 'true';
 }
 
+export function getJwtExpiresInSeconds(): number {
+  const configured = process.env['JWT_EXPIRES_IN_SECS']?.trim();
+  if (!configured) {
+    return 60 * 60 * 8;
+  }
+
+  const parsed = Number(configured);
+  if (!Number.isInteger(parsed) || parsed < 300 || parsed > 60 * 60 * 24 * 30) {
+    throw new Error('JWT_EXPIRES_IN_SECS must be an integer between 300 and 2592000 seconds.');
+  }
+
+  return parsed;
+}
+
 export function assertAuthEnvironment(): void {
   getJwtSecret();
 

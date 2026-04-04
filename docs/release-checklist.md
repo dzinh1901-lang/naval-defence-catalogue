@@ -18,6 +18,8 @@ pnpm smoke:production
 - API:
   - `DATABASE_URL` uses `postgresql://` or `postgres://`
   - `JWT_SECRET` is set and at least 32 characters
+  - `JWT_EXPIRES_IN_SECS` stays short-lived unless there is a documented operational exception
+  - `CORS_ALLOWED_ORIGINS` is explicitly set only for trusted browser origins, otherwise left unset
   - `AUTH_BOOTSTRAP_SECRET` is at least 8 characters when used
   - `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE` remains `false` in production unless explicitly required for a tightly controlled deployment
 - Web:

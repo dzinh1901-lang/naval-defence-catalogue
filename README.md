@@ -216,7 +216,8 @@ The API uses JWT-based authentication via `@nestjs/passport` and `passport-jwt`.
 | Variable | Required | Description |
 |---|---|---|
 | `JWT_SECRET` | API runtime | HS256 signing secret (min 32 chars). The API refuses to boot if it is missing or too short. |
-| `JWT_EXPIRES_IN_SECS` | Optional | Token lifetime in seconds (default: 604800 = 7 days). |
+| `JWT_EXPIRES_IN_SECS` | Optional | Token lifetime in seconds (default: 28800 = 8 hours). |
+| `CORS_ALLOWED_ORIGINS` | Optional | Comma-separated browser origins allowed to call the API directly. Leave unset when the API should not accept direct browser cross-origin traffic. |
 | `AUTH_BOOTSTRAP_SECRET` | Web/API bootstrap | Secret for `POST /auth/token` — service-account token issuance. Must be at least 8 characters when set. |
 | `API_URL` | Web runtime | Server-side base URL used by the Next.js app to call the API. |
 | `NEXT_PUBLIC_API_URL` | Browser runtime | Browser-visible API base URL. |
@@ -245,11 +246,13 @@ To explicitly allow it in a controlled deployment, set `ALLOW_BOOTSTRAP_TOKEN_IS
 
 - Set `NODE_ENV=production`.
 - Set a strong `JWT_SECRET` before starting the API. Startup fails fast without it.
+- Keep `JWT_EXPIRES_IN_SECS` short-lived unless there is a strong operational reason to extend it.
 - Configure either `API_AUTH_TOKEN` or `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*` before starting the web app.
 - In production, prefer `API_AUTH_TOKEN` or a real identity provider. Bootstrap token issuance stays disabled unless `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE=true` is explicitly set.
 - `NEXT_PUBLIC_API_AUTH_TOKEN` is no longer supported; interactive workspace mutations now proxy through the Next.js server.
 - Run `pnpm db:migrate:deploy` before rolling out API or worker changes.
 - Set `API_URL` and `NEXT_PUBLIC_API_URL` explicitly for deployed web environments.
+- Set `CORS_ALLOWED_ORIGINS` explicitly if browsers are expected to call the API cross-origin; otherwise the API denies cross-origin browser access by default.
 
 ### Access model — RBAC (Milestone 4)
 

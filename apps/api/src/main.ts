@@ -10,7 +10,7 @@ import { assertAuthEnvironment, isBootstrapAuthEnabled } from './modules/auth/au
 async function bootstrap() {
   const runtimeConfig = assertApiRuntimeEnvironment();
   assertAuthEnvironment();
-  const app = await NestFactory.create(AppModule, { bufferLogs: true, cors: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.use(
     helmet({
@@ -18,6 +18,11 @@ async function bootstrap() {
       crossOriginEmbedderPolicy: false,
     }),
   );
+
+  app.enableCors({
+    origin: runtimeConfig.corsAllowedOrigins.length > 0 ? runtimeConfig.corsAllowedOrigins : false,
+    credentials: true,
+  });
 
   // Use structured Pino logger for all NestJS internal log output.
   app.useLogger(app.get(Logger));
@@ -30,6 +35,7 @@ async function bootstrap() {
       databaseTarget: formatDatabaseTarget(runtimeConfig.databaseUrl),
       bootstrapAuthConfigured: Boolean(process.env['AUTH_BOOTSTRAP_SECRET']?.trim()),
       bootstrapAuthEnabled: isBootstrapAuthEnabled(),
+      corsAllowedOrigins: runtimeConfig.corsAllowedOrigins,
     })}`,
   );
 

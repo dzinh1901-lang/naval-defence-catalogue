@@ -21,7 +21,7 @@ export class AuthService {
 
   /**
    * Sign a JWT for the given user principal.
-   * Respects JWT_EXPIRES_IN_SECS environment variable (default: 604800 = 7 days).
+   * Respects JWT_EXPIRES_IN_SECS environment variable (default: 28800 = 8 hours).
    */
   signToken(user: RequestUser): string {
     const payload: JwtPayload = {

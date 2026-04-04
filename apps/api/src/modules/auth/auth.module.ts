@@ -3,7 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { getJwtSecret } from './auth-env';
+import { getJwtExpiresInSeconds, getJwtSecret } from './auth-env';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
@@ -12,8 +12,8 @@ import { JwtStrategy } from './jwt.strategy';
     JwtModule.register({
       secret: getJwtSecret(),
       signOptions: {
-        // 7 days expressed as seconds (avoids StringValue template-literal constraint).
-        expiresIn: 60 * 60 * 24 * 7,
+        // Default to 8 hours unless explicitly overridden.
+        expiresIn: getJwtExpiresInSeconds(),
       },
     }),
   ],
