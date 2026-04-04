@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "helmet": "^8.1.0",
     "@nestjs/common": "^10.4.0",
     "@nestjs/core": "^10.4.0",
     "@nestjs/jwt": "^11.0.2",

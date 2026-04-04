@@ -235,13 +235,18 @@ The API uses JWT-based authentication via `@nestjs/passport` and `passport-jwt`.
 ### Issuing JWT tokens
 
 `POST /api/v1/auth/token` accepts a `bootstrapSecret` + user fields and returns a signed JWT.
-In production, replace this endpoint with a proper identity provider flow (OIDC/OAuth2).
+This route is intended for local development and tightly controlled service environments.
+In production, replace this endpoint with a proper identity provider flow (OIDC/OAuth2) or a pre-issued server-side token.
+
+**Production guardrail:** bootstrap token issuance is disabled by default when `NODE_ENV=production`.
+To explicitly allow it in a controlled deployment, set `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE=true`.
 
 ### Production expectations
 
 - Set `NODE_ENV=production`.
 - Set a strong `JWT_SECRET` before starting the API. Startup fails fast without it.
 - Configure either `API_AUTH_TOKEN` or `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*` before starting the web app.
+- In production, prefer `API_AUTH_TOKEN` or a real identity provider. Bootstrap token issuance stays disabled unless `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE=true` is explicitly set.
 - `NEXT_PUBLIC_API_AUTH_TOKEN` is no longer supported; interactive workspace mutations now proxy through the Next.js server.
 - Run `pnpm db:migrate:deploy` before rolling out API or worker changes.
 - Set `API_URL` and `NEXT_PUBLIC_API_URL` explicitly for deployed web environments.
@@ -310,7 +315,8 @@ pnpm smoke:production
 1. Build and publish the API, web, and worker images from `infra/docker/`.
 2. Apply committed Prisma migrations with `pnpm db:migrate:deploy`.
 3. Confirm `JWT_SECRET`, `API_URL`, `NEXT_PUBLIC_API_URL`, and either `API_AUTH_TOKEN` or `AUTH_BOOTSTRAP_SECRET` + `API_SERVICE_*` are set.
-4. Smoke-test:
+4. If `NODE_ENV=production`, keep `ALLOW_BOOTSTRAP_TOKEN_ISSUANCE=false` unless you intentionally need bootstrap token issuance in a tightly controlled deployment.
+5. Smoke-test:
     - `GET /api/v1/health/live`
     - `GET /api/v1/health/ready`
     - `GET /api/v1/auth/me` with missing, invalid, expired, and valid auth
