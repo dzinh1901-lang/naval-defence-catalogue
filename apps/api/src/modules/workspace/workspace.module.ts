@@ -6,6 +6,12 @@ import { WorkspaceService } from './workspace.service';
 
 @Module({
   imports: [PrismaModule, IntelligenceModule],
+import { WorkspaceController } from './workspace.controller';
+import { WorkspaceService } from './workspace.service';
+import { PrismaModule } from '../../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
   controllers: [WorkspaceController],
   providers: [WorkspaceService],
 })

@@ -1,22 +1,43 @@
-import { Body, Controller, Get, Post, UnauthorizedException } from '@nestjs/common';
-import { IsEmail, IsIn, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { IsEmail, IsIn, IsString, Matches, MinLength } from 'class-validator';
 import { AuthService } from './auth.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import type { RequestUser } from '../../common/types/request-user.type';
+import { isBootstrapAuthEnabled } from './auth-env';
+
+// Seeded service principals use stable slug-like IDs (for example `dev-user-admin`),
+// so token bootstrap validation accepts the same alphanumeric + hyphen format.
+const tokenPrincipalIdPattern = /^[A-Za-z0-9-]+$/;
+const tokenRoles = ['ADMIN', 'MEMBER', 'VIEWER'] as const;
 
 class IssueTokenDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
+  @Matches(tokenPrincipalIdPattern, {
+    message: 'userId must contain only letters, numbers, and hyphens.',
+  })
   userId!: string;
 
   @IsEmail()
   email!: string;
 
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
+  @Matches(tokenPrincipalIdPattern, {
+    message: 'organizationId must contain only letters, numbers, and hyphens.',
+  })
   organizationId!: string;
 
-  @IsIn(['ADMIN', 'MEMBER', 'VIEWER'])
-  role!: 'ADMIN' | 'MEMBER' | 'VIEWER';
+  @IsIn([...tokenRoles])
+  role!: (typeof tokenRoles)[number];
 
   /**
    * Dev-only bootstrap secret — prevents unrestricted token issuance.
@@ -40,8 +61,20 @@ export class AuthController {
   @Public()
   @Post('token')
   issueToken(@Body() dto: IssueTokenDto) {
-    const expected = process.env['AUTH_BOOTSTRAP_SECRET'];
-    if (!expected || dto.bootstrapSecret !== expected) {
+    const expected = process.env['AUTH_BOOTSTRAP_SECRET']?.trim();
+    if (!expected) {
+      throw new ServiceUnavailableException(
+        'AUTH_BOOTSTRAP_SECRET is not configured on this API instance.',
+      );
+    }
+
+    if (process.env['NODE_ENV'] === 'production' && !isBootstrapAuthEnabled()) {
+      throw new ServiceUnavailableException(
+        'Bootstrap token issuance is disabled in production. Configure API_AUTH_TOKEN or a real identity provider instead.',
+      );
+    }
+
+    if (dto.bootstrapSecret !== expected) {
       throw new UnauthorizedException('Invalid bootstrap secret');
     }
 
