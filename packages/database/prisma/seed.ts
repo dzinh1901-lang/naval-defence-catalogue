@@ -63,7 +63,6 @@ async function seedOrganizations() {
     },
     create: {
       id: ids.orgPrimary,
-      id: 'dev-org',
       name: 'Naval Systems Command',
       slug: 'naval-systems-command',
       plan: 'ENTERPRISE',
@@ -82,64 +81,58 @@ async function seedOrganizations() {
       name: 'Oceanic Research Directorate',
       slug: 'oceanic-research-directorate',
       plan: 'PROFESSIONAL',
-      id: 'dev-user-admin',
-      email: 'cmdr.lee@naval-systems.dev',
-      name: 'Commander S. Lee',
-      passwordHash: null, // placeholder — JWT/OAuth to be implemented in M2
     },
   });
 }
 
 async function seedUsers() {
-  const users = [
-    {
+  await prisma.user.upsert({
+    where: { id: ids.userAdmin },
+    update: {},
+    create: {
       id: ids.userAdmin,
       email: 'cmdr.lee@naval-systems.dev',
       name: 'Commander S. Lee',
       title: 'Program Director',
+      passwordHash: null,
     },
-    {
-      id: ids.userEngineer,
-  const engineerUser = await prisma.user.upsert({
-    where: { email: 'eng.chen@naval-systems.dev' },
+  });
+
+  await prisma.user.upsert({
+    where: { id: ids.userEngineer },
     update: {},
     create: {
-      id: 'dev-user-member',
+      id: ids.userEngineer,
       email: 'eng.chen@naval-systems.dev',
       name: 'Dr. M. Chen',
       title: 'Hydrodynamics Lead',
+      passwordHash: null,
     },
-    {
-      id: ids.userAnalyst,
   });
 
-  const analystUser = await prisma.user.upsert({
-    where: { email: 'analyst.kowalski@naval-systems.dev' },
+  await prisma.user.upsert({
+    where: { id: ids.userAnalyst },
     update: {},
     create: {
-      id: 'dev-user-viewer',
+      id: ids.userAnalyst,
       email: 'analyst.kowalski@naval-systems.dev',
       name: 'P. Kowalski',
       title: 'Systems Analyst',
+      passwordHash: null,
     },
-    {
+  });
+
+  await prisma.user.upsert({
+    where: { id: ids.userArchitect },
+    update: {},
+    create: {
       id: ids.userArchitect,
       email: 'lt.singh@naval-systems.dev',
       name: 'Lt. A. Singh',
       title: 'Platform Architect',
+      passwordHash: null,
     },
-  ];
-
-  for (const user of users) {
-    await prisma.user.upsert({
-      where: { id: user.id },
-      update: user,
-      create: {
-        ...user,
-        passwordHash: null,
-      },
-    });
-  }
+  });
 }
 
 async function seedOrganizationMembers() {
@@ -779,10 +772,10 @@ async function seedAuditEvents() {
   // ── Workspace: View config ─────────────────────────────────────────────────
 
   await prisma.workspaceViewConfig.upsert({
-    where: { twinId: frigateTwin.id },
+    where: { twinId: ids.twinPrimary },
     update: {},
     create: {
-      twinId: frigateTwin.id,
+      twinId: ids.twinPrimary,
       selectedMaterialId: matSteel.id,
       selectedLightingId: lightGolden.id,
       camDof: 3.0,
@@ -799,7 +792,7 @@ async function seedAuditEvents() {
     data: [
       {
         id: 'hs-radar',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         label: 'APAR Radar',
         description: 'S-band active phased array radar — horizon and volume search.',
         subsystemId: 'ss-radar',
@@ -808,7 +801,7 @@ async function seedAuditEvents() {
       },
       {
         id: 'hs-bridge',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         label: 'Bridge / CMS',
         description: 'Combat Management System operator consoles.',
         subsystemId: 'ss-combat',
@@ -817,7 +810,7 @@ async function seedAuditEvents() {
       },
       {
         id: 'hs-vls',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         label: 'VLS Cells',
         description: 'Sylver A50 vertical launch system — 48 cells.',
         subsystemId: 'ss-weapons',
@@ -826,7 +819,7 @@ async function seedAuditEvents() {
       },
       {
         id: 'hs-propulsion',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         label: 'Propulsion',
         description: 'CODLAG plant — gas turbines and electric drives.',
         subsystemId: 'ss-propulsion',
@@ -835,7 +828,7 @@ async function seedAuditEvents() {
       },
       {
         id: 'hs-sonar',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         label: 'Hull Sonar',
         description: 'Medium-frequency hull-mounted sonar.',
         subsystemId: 'ss-sonar',
@@ -854,28 +847,28 @@ async function seedAuditEvents() {
     data: [
       {
         id: 'alert-001',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         title: 'Critical Alerts',
         message: 'Sonar Status Active — bearing 247° unidentified contact.',
         severity: 'CRITICAL',
       },
       {
         id: 'alert-002',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         title: 'Critical Alerts',
         message: `Coord: 43.17° N, 7.42° E — propulsion temperature threshold exceeded.`,
         severity: 'CRITICAL',
       },
       {
         id: 'alert-003',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         title: 'Structural Stress Warning',
         message: 'Frame 48–52 stress sensor above 85% threshold at current heading.',
         severity: 'WARNING',
       },
       {
         id: 'alert-004',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         title: 'Link-16 Degraded',
         message: 'Data link uplink quality below 60% — check antenna alignment.',
         severity: 'WARNING',
@@ -883,7 +876,7 @@ async function seedAuditEvents() {
       },
       {
         id: 'alert-005',
-        twinId: frigateTwin.id,
+        twinId: ids.twinPrimary,
         title: 'Simulation Result Available',
         message: 'Propulsion envelope run #3 completed — review output data.',
         severity: 'INFO',
@@ -901,64 +894,64 @@ async function seedAuditEvents() {
     data: [
       {
         id: 'log-001',
-        twinId: frigateTwin.id,
-        actorId: engineerUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userEngineer,
         action: 'Structural decimation updated',
         detail: 'Frame mesh reduced 40% — no fidelity loss at system boundary.',
         version: 'v2.41',
       },
       {
         id: 'log-002',
-        twinId: frigateTwin.id,
-        actorId: engineerUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userEngineer,
         action: 'Structural decimation updated',
         detail: 'Secondary hull sections re-meshed for simulation performance.',
         version: 'v2.41',
       },
       {
         id: 'log-003',
-        twinId: frigateTwin.id,
-        actorId: analystUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userAnalyst,
         action: 'Structural users updated',
         detail: 'Access permissions aligned with PDR gate checklist.',
         version: 'v2.41',
       },
       {
         id: 'log-004',
-        twinId: frigateTwin.id,
-        actorId: adminUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userAdmin,
         action: 'Structural events updated',
         detail: 'Event timeline synced to simulation run schedule.',
         version: 'v2.41',
       },
       {
         id: 'log-005',
-        twinId: frigateTwin.id,
-        actorId: engineerUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userEngineer,
         action: 'Structural geometry added',
         detail: 'Added forward deck geometry from revised hull lines.',
         version: 'v2.41',
       },
       {
         id: 'log-006',
-        twinId: frigateTwin.id,
-        actorId: engineerUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userEngineer,
         action: 'Structural decimation updated',
         detail: 'Superstructure mesh optimised for render export.',
         version: 'v2.41',
       },
       {
         id: 'log-007',
-        twinId: frigateTwin.id,
-        actorId: analystUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userAnalyst,
         action: 'REQ-003 status updated',
         detail: 'Acoustic requirement moved to REVIEW — evidence package submitted.',
         version: 'v2.40',
       },
       {
         id: 'log-008',
-        twinId: frigateTwin.id,
-        actorId: adminUser.id,
+        twinId: ids.twinPrimary,
+        actorId: ids.userAdmin,
         action: 'Design review opened',
         detail: 'PDR for CMS architecture initiated.',
         version: 'v2.39',
