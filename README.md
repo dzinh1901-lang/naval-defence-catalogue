@@ -183,7 +183,22 @@ GET  /api/v1/reviews/:id               Get a review
 PATCH /api/v1/reviews/:id              Update review status
 GET  /api/v1/evidence/review/:id       List evidence for a review
 POST /api/v1/evidence                  Create evidence
+GET  /api/v1/workspace/:twinId           Workspace summary (project, twin, presets, KPI summaries)
+GET  /api/v1/workspace/:twinId/hotspots  Vessel viewport hotspots
+GET  /api/v1/workspace/:twinId/alerts    Alert feed for workspace overlays
+GET  /api/v1/workspace/:twinId/history   Twin activity/history feed
+GET  /api/v1/workspace/:twinId/performance Simulation/performance summary
+GET  /api/v1/workspace/:twinId/rules     Compliance/rules summary
+GET  /api/v1/workspace/:twinId/team      Team activity summary
+GET  /api/v1/workspace/:twinId/view-config Current design-studio camera/material/light config
+PATCH /api/v1/workspace/:twinId/view-config Persist design-studio camera/material/light config
 ```
+
+### Workspace route
+
+After seeding, open the engineering workspace at:
+
+- `http://localhost:3000/workspace/twin-t52-baseline`
 
 ---
 
