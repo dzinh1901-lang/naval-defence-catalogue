@@ -73,22 +73,8 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   const url = `${getApiBase()}/api/v1${path}`;
 
   const res = await fetch(url, {
-    headers: withApiHeaders(options?.headers),
-  ViewportHotspot,
-  AlertEvent,
-  TwinActivityLog,
-  WorkspaceViewConfig,
-  UpdateViewConfigDto,
-} from '@naval/domain';
-import { getServerApiBase, getServerApiHeaders } from './env';
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${getServerApiBase()}/api/v1${path}`;
-  const headers = await getServerApiHeaders(options?.headers);
-
-  const res = await fetch(url, {
     ...options,
-    headers,
+    headers: withApiHeaders(options?.headers),
     // Next.js cache: revalidate every 30 s by default.
     // Individual callers can override via next: { revalidate: ... } or cache: 'no-store'.
     next: { revalidate: 30 },
@@ -231,19 +217,14 @@ export async function listEvidence(reviewId: string): Promise<Evidence[]> {
   return apiFetch<Evidence[]>(`/evidence/review/${reviewId}`);
 }
 
-// —— Workspace ————————————————————————————————————————————————————————————————————
-
-export async function getWorkspaceSummary(twinId: string): Promise<WorkspaceSummary | null> {
-  try {
-    return await apiFetch<WorkspaceSummary>(`/workspace/${twinId}`, {
-      next: { revalidate: 15 },
-    } as RequestInit);
 // ── Workspace ─────────────────────────────────────────────────────────────────
 
 /** GET /workspace/:twinId — workspace summary */
 export async function getWorkspaceSummary(twinId: string): Promise<WorkspaceSummary | null> {
   try {
-    return await apiFetch<WorkspaceSummary>(`/workspace/${twinId}`);
+    return await apiFetch<WorkspaceSummary>(`/workspace/${twinId}`, {
+      next: { revalidate: 15 },
+    } as RequestInit);
   } catch (err) {
     if (err instanceof ApiClientError && err.status === 404) return null;
     throw err;
@@ -315,40 +296,5 @@ export async function runWorkspaceAgentCollaboration(
   return apiMutate<WorkspaceAgentCollaborationResponse>(`/workspace/${twinId}/agent/collaborate`, {
     method: 'POST',
     body: JSON.stringify(payload),
-/** GET /workspace/:twinId/hotspots */
-export async function getWorkspaceHotspots(twinId: string): Promise<ViewportHotspot[]> {
-  return apiFetch<ViewportHotspot[]>(`/workspace/${twinId}/hotspots`);
-}
-
-/** GET /workspace/:twinId/alerts */
-export async function getWorkspaceAlerts(twinId: string): Promise<AlertEvent[]> {
-  return apiFetch<AlertEvent[]>(`/workspace/${twinId}/alerts`);
-}
-
-/** GET /workspace/:twinId/history */
-export async function getWorkspaceHistory(twinId: string): Promise<TwinActivityLog[]> {
-  return apiFetch<TwinActivityLog[]>(`/workspace/${twinId}/history`);
-}
-
-/** GET /workspace/:twinId/view-config */
-export async function getWorkspaceViewConfig(twinId: string): Promise<WorkspaceViewConfig | null> {
-  try {
-    return await apiFetch<WorkspaceViewConfig>(`/workspace/${twinId}/view-config`);
-  } catch (err) {
-    if (err instanceof ApiClientError && err.status === 404) return null;
-    throw err;
-  }
-}
-
-/** PATCH /workspace/:twinId/view-config — client-side mutation */
-export async function updateWorkspaceViewConfig(
-  twinId: string,
-  dto: UpdateViewConfigDto,
-): Promise<WorkspaceViewConfig> {
-  return apiFetch<WorkspaceViewConfig>(`/workspace/${twinId}/view-config`, {
-    method: 'PATCH',
-    body: JSON.stringify(dto),
-    // Disable Next.js cache for mutations.
-    cache: 'no-store',
   });
 }
