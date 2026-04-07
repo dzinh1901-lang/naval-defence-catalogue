@@ -67,17 +67,17 @@ export class AuthService {
 
     if (token === 'dev-token') {
       return {
-        userId: 'dev-user-admin',
+        userId: 'user-cmdr-lee',
         email: 'cmdr.lee@naval-systems.dev',
-        organizationId: 'dev-org',
+        organizationId: 'org-naval-systems-command',
         role: 'ADMIN',
       };
     }
 
     return {
-      userId: 'dev-user-member',
+      userId: 'user-dr-chen',
       email: 'eng.chen@naval-systems.dev',
-      organizationId: 'dev-org',
+      organizationId: 'org-naval-systems-command',
       role: 'MEMBER',
     };
   }

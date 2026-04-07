@@ -17,11 +17,22 @@ import type {
   Variant,
   Review,
   Evidence,
+  WorkspaceSummary,
+  AlertEvent,
+  TwinActivityLog,
+  WorkspaceViewConfigPayload,
+  WorkspaceViewConfigUpdateInput,
+  ViewportHotspot,
+  WorkspacePerformanceSummary,
+  WorkspaceRulesSummary,
+  WorkspaceTeamSummary,
+  WorkspaceDashboardPayload,
+  WorkspaceAgentCollaborationResponse,
 } from '@naval/domain';
 
 // ── Base config ──────────────────────────────────────────────────────────────
 
-function getApiBase(): string {
+export function getApiBase(): string {
   const base = process.env['API_URL'] ?? process.env['NEXT_PUBLIC_API_URL'];
   if (!base) {
     throw new Error(
@@ -31,15 +42,38 @@ function getApiBase(): string {
   return base.replace(/\/$/, '');
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+function getApiToken(): string | undefined {
+  if (process.env['API_AUTH_TOKEN']) {
+    return process.env['API_AUTH_TOKEN'];
+  }
+
+  if (process.env['NODE_ENV'] !== 'production') {
+    return 'dev-token';
+  }
+
+  return undefined;
+}
+
+function withApiHeaders(headers?: HeadersInit): Headers {
+  const resolved = new Headers(headers);
+
+  if (!resolved.has('Content-Type')) {
+    resolved.set('Content-Type', 'application/json');
+  }
+
+  const token = getApiToken();
+  if (token && !resolved.has('Authorization')) {
+    resolved.set('Authorization', `Bearer ${token}`);
+  }
+
+  return resolved;
+}
+
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getApiBase()}/api/v1${path}`;
 
   const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers: withApiHeaders(options?.headers),
     // Next.js cache: revalidate every 30 s by default.
     // Individual callers can override via next: { revalidate: ... } or cache: 'no-store'.
     next: { revalidate: 30 },
@@ -52,6 +86,13 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json() as Promise<T>;
+}
+
+export async function apiMutate<T>(path: string, options: RequestInit): Promise<T> {
+  return apiFetch<T>(path, {
+    ...options,
+    cache: 'no-store',
+  });
 }
 
 export class ApiClientError extends Error {
@@ -165,4 +206,85 @@ export async function getReview(id: string): Promise<Review | null> {
 /** List evidence for a review. */
 export async function listEvidence(reviewId: string): Promise<Evidence[]> {
   return apiFetch<Evidence[]>(`/evidence/review/${reviewId}`);
+}
+
+// —— Workspace ————————————————————————————————————————————————————————————————————
+
+export async function getWorkspaceSummary(twinId: string): Promise<WorkspaceSummary | null> {
+  try {
+    return await apiFetch<WorkspaceSummary>(`/workspace/${twinId}`, {
+      next: { revalidate: 15 },
+    } as RequestInit);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.status === 404) return null;
+    throw err;
+  }
+}
+
+export async function getWorkspaceAlerts(twinId: string): Promise<AlertEvent[]> {
+  return apiFetch<AlertEvent[]>(`/workspace/${twinId}/alerts`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function getWorkspaceHistory(twinId: string): Promise<TwinActivityLog[]> {
+  return apiFetch<TwinActivityLog[]>(`/workspace/${twinId}/history`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function getWorkspaceViewConfig(twinId: string): Promise<WorkspaceViewConfigPayload> {
+  return apiFetch<WorkspaceViewConfigPayload>(`/workspace/${twinId}/view-config`, {
+    cache: 'no-store',
+  });
+}
+
+export async function updateWorkspaceViewConfig(
+  twinId: string,
+  payload: WorkspaceViewConfigUpdateInput,
+): Promise<WorkspaceViewConfigPayload> {
+  return apiMutate<WorkspaceViewConfigPayload>(`/workspace/${twinId}/view-config`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getWorkspaceHotspots(twinId: string): Promise<ViewportHotspot[]> {
+  return apiFetch<ViewportHotspot[]>(`/workspace/${twinId}/hotspots`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function getWorkspacePerformance(twinId: string): Promise<WorkspacePerformanceSummary> {
+  return apiFetch<WorkspacePerformanceSummary>(`/workspace/${twinId}/performance`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function getWorkspaceRules(twinId: string): Promise<WorkspaceRulesSummary> {
+  return apiFetch<WorkspaceRulesSummary>(`/workspace/${twinId}/rules`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function getWorkspaceTeam(twinId: string): Promise<WorkspaceTeamSummary> {
+  return apiFetch<WorkspaceTeamSummary>(`/workspace/${twinId}/team`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function getWorkspaceDashboard(twinId: string): Promise<WorkspaceDashboardPayload> {
+  return apiFetch<WorkspaceDashboardPayload>(`/workspace/${twinId}/dashboard`, {
+    next: { revalidate: 15 },
+  } as RequestInit);
+}
+
+export async function runWorkspaceAgentCollaboration(
+  twinId: string,
+  payload: { query: string; topK?: number },
+): Promise<WorkspaceAgentCollaborationResponse> {
+  return apiMutate<WorkspaceAgentCollaborationResponse>(`/workspace/${twinId}/agent/collaborate`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

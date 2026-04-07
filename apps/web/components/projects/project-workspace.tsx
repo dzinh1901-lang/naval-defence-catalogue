@@ -84,7 +84,7 @@ export function ProjectWorkspace({ project, requirements = [], reviews = [] }: P
                 {project.twins?.map((twin) => (
                   <Link
                     key={twin.id}
-                    href={`/projects/${project.id}/twins/${twin.id}`}
+                    href={`/twins/${twin.id}/dashboard`}
                     className="flex items-center gap-3 rounded-lg bg-surface-1 border border-border-subtle hover:border-accent/40 hover:bg-surface-2/60 p-3 transition-all group"
                   >
                     <div className="h-8 w-8 rounded bg-naval-cyan/10 border border-naval-cyan/20 flex items-center justify-center shrink-0">
