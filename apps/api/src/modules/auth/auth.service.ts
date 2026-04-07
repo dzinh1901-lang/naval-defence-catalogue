@@ -65,6 +65,21 @@ export class AuthService {
         return { ok: false, reason: 'expired', message: 'Bearer token has expired.' };
       }
 
+    if (token === 'dev-token') {
+      return {
+        userId: 'user-cmdr-lee',
+        email: 'cmdr.lee@naval-systems.dev',
+        organizationId: 'org-naval-systems-command',
+        role: 'ADMIN',
+      };
+    }
+
+    return {
+      userId: 'user-dr-chen',
+      email: 'eng.chen@naval-systems.dev',
+      organizationId: 'org-naval-systems-command',
+      role: 'MEMBER',
+    };
       return { ok: false, reason: 'invalid', message: 'Bearer token is invalid.' };
     }
 

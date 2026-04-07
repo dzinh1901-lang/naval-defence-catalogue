@@ -93,6 +93,34 @@ export enum EvidenceType {
   PHOTO = 'PHOTO',
 }
 
+export enum AlertSeverity {
+  CRITICAL = 'CRITICAL',
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+}
+
+export enum HotspotCategory {
+  SENSOR = 'SENSOR',
+  WEAPON = 'WEAPON',
+  PROPULSION = 'PROPULSION',
+  PLATFORM = 'PLATFORM',
+  COMMUNICATION = 'COMMUNICATION',
+  SUPPORT = 'SUPPORT',
+}
+
+export const WORKSPACE_SECTION_IDS = [
+  'overview',
+  'vessel-layout',
+  'performance-tests',
+  'design-studio',
+  'history-log',
+  'rules-check',
+  'team-hub',
+] as const;
+
+export type WorkspaceSectionId = (typeof WORKSPACE_SECTION_IDS)[number];
+
 // ── Base ────────────────────────────────────────────────────────
 
 export interface BaseEntity {
@@ -113,6 +141,7 @@ export interface Organization extends BaseEntity {
 export interface User extends BaseEntity {
   email: string;
   name: string;
+  title?: string | null;
   avatarUrl?: string | null;
 }
 
@@ -158,6 +187,13 @@ export interface DigitalTwin extends BaseEntity {
   description?: string | null;
   version: string;
   status: TwinStatus;
+  hullCode?: string | null;
+  className?: string | null;
+  runtimeStatus?: string | null;
+  syncStatus?: string | null;
+  lastSyncedAt?: string | null;
+  locationLabel?: string | null;
+  missionProfile?: string | null;
   projectId: string;
   project?: Project;
   subsystems?: Subsystem[];
@@ -274,6 +310,251 @@ export interface AuditEvent {
   metadata: Record<string, unknown>;
   createdAt: string;
   actor?: User;
+}
+
+export interface CameraState {
+  yaw: number;
+  pitch: number;
+  zoom: number;
+  fieldOfView?: number;
+}
+
+export interface WorkspaceViewConfig extends BaseEntity {
+  twinId: string;
+  selectedHotspotId?: string | null;
+  selectedMaterialPresetId?: string | null;
+  selectedLightingPresetId?: string | null;
+  selectedCameraPresetId?: string | null;
+  activeKeyframeSequenceId?: string | null;
+  activeSection: WorkspaceSectionId;
+  cameraState: CameraState;
+}
+
+export interface ViewportHotspot extends BaseEntity {
+  twinId: string;
+  subsystemId?: string | null;
+  slug: string;
+  title: string;
+  description: string;
+  category: HotspotCategory;
+  status: string;
+  anchorX: number;
+  anchorY: number;
+  calloutX: number;
+  calloutY: number;
+  healthScore: number;
+  displayOrder: number;
+  telemetry: Record<string, string | number>;
+  subsystem?: Subsystem | null;
+}
+
+export interface AlertEvent extends BaseEntity {
+  twinId: string;
+  subsystemId?: string | null;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  source: string;
+  acknowledged: boolean;
+  raisedAt: string;
+  subsystem?: Subsystem | null;
+}
+
+export interface TwinActivityLog extends BaseEntity {
+  twinId: string;
+  actorId?: string | null;
+  subsystemId?: string | null;
+  eventType: string;
+  summary: string;
+  detail?: string | null;
+  occurredAt: string;
+  actorName?: string | null;
+  actorTitle?: string | null;
+  subsystemName?: string | null;
+}
+
+export interface MaterialPreset extends BaseEntity {
+  twinId: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  hullColor: string;
+  deckColor: string;
+  accentColor: string;
+  finish: string;
+  roughness: number;
+  reflectivity: number;
+  thermalProfile?: string | null;
+  isDefault: boolean;
+}
+
+export interface LightingPreset extends BaseEntity {
+  twinId: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  environmentPreset: string;
+  accentColor: string;
+  ambientIntensity: number;
+  directionalIntensity: number;
+  fogDensity: number;
+  shadowBias: number;
+  isDefault: boolean;
+}
+
+export interface CameraPreset extends BaseEntity {
+  twinId: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  focusLabel: string;
+  yaw: number;
+  pitch: number;
+  zoom: number;
+  fieldOfView: number;
+  transitionMs: number;
+  isDefault: boolean;
+}
+
+export interface KeyframeSequence extends BaseEntity {
+  twinId: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  durationSeconds: number;
+  keyframes: Array<Record<string, unknown>>;
+  isDefault: boolean;
+}
+
+export interface WorkspacePerformanceSummary {
+  readinessScore: number;
+  latestRunLabel: string;
+  maxSpeedKnots: number;
+  enduranceNm: number;
+  acousticMarginDb: number;
+  hullStressMarginPct: number;
+  combatLatencyMs: number;
+}
+
+export interface WorkspaceRulesSummary {
+  complianceScore: number;
+  approvedRequirements: number;
+  reviewRequirements: number;
+  draftRequirements: number;
+  openReviews: number;
+  criticalRule: string;
+}
+
+export interface WorkspaceTeamMember {
+  id: string;
+  name: string;
+  title?: string | null;
+  role: MemberRole;
+  status: 'online' | 'reviewing' | 'offline';
+  lastActiveAt?: string | null;
+}
+
+export interface WorkspaceTeamSummary {
+  activeMembers: number;
+  onlineMembers: number;
+  upcomingReview: string;
+  members: WorkspaceTeamMember[];
+}
+
+export interface WorkspaceSummary {
+  twin: DigitalTwin;
+  project: Pick<Project, 'id' | 'name' | 'slug' | 'status' | 'organizationId'>;
+  organization: Pick<Organization, 'id' | 'name' | 'slug' | 'plan'>;
+  subsystemTree: Subsystem[];
+  hotspotCount: number;
+  alertCount: number;
+  performance: WorkspacePerformanceSummary;
+  rules: WorkspaceRulesSummary;
+  team: WorkspaceTeamSummary;
+}
+
+export interface WorkspaceViewConfigPayload {
+  config: WorkspaceViewConfig;
+  materials: MaterialPreset[];
+  lightingPresets: LightingPreset[];
+  cameraPresets: CameraPreset[];
+  keyframeSequences: KeyframeSequence[];
+}
+
+export interface WorkspaceViewConfigUpdateInput {
+  selectedHotspotId?: string | null;
+  selectedMaterialPresetId?: string | null;
+  selectedLightingPresetId?: string | null;
+  selectedCameraPresetId?: string | null;
+  activeKeyframeSequenceId?: string | null;
+  activeSection?: WorkspaceSectionId;
+  cameraState?: Partial<CameraState>;
+}
+
+export interface WorkspaceDashboardKpi {
+  id: string;
+  label: string;
+  value: number | string;
+  unit?: string;
+  trend: 'up' | 'down' | 'steady';
+  deltaText?: string;
+}
+
+export interface WorkspaceDashboardTrendPoint {
+  id: string;
+  label: string;
+  timestamp: string | null;
+  readinessScore: number;
+  combatLatencyMs: number;
+  hullStressMarginPct: number;
+}
+
+export interface WorkspaceDashboardBreakdownRow {
+  hotspotId: string;
+  subsystemName: string;
+  subsystemIdentifier: string;
+  category: HotspotCategory;
+  hotspotStatus: string;
+  healthScore: number;
+  openAlerts: number;
+  telemetry: Record<string, string | number>;
+}
+
+export interface WorkspaceDashboardAgentInfo {
+  name: string;
+  status: 'online' | 'degraded';
+  modelLabel: string;
+  endpointPath: string;
+  capabilities: string[];
+}
+
+export interface WorkspaceDashboardPayload {
+  summary: WorkspaceSummary;
+  performance: WorkspacePerformanceSummary;
+  rules: WorkspaceRulesSummary;
+  team: WorkspaceTeamSummary;
+  viewConfig: WorkspaceViewConfigPayload;
+  hotspots: ViewportHotspot[];
+  kpis: WorkspaceDashboardKpi[];
+  trends: WorkspaceDashboardTrendPoint[];
+  breakdown: WorkspaceDashboardBreakdownRow[];
+  agent: WorkspaceDashboardAgentInfo;
+  assumptions: string[];
+}
+
+export interface WorkspaceAgentReference {
+  kind: string;
+  id: string;
+  title: string;
+  score: number;
+}
+
+export interface WorkspaceAgentCollaborationResponse {
+  prompt: string;
+  generatedAt: string;
+  summary: string;
+  recommendations: string[];
+  references: WorkspaceAgentReference[];
 }
 
 // ── API Response wrappers ──────────────────────────────────────

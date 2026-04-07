@@ -106,7 +106,7 @@ function TwinTreeItem({ twin, projectId }: { twin: DigitalTwin; projectId: strin
 
   return (
     <Link
-      href={`/projects/${projectId}/twins/${twin.id}`}
+      href={`/twins/${twin.id}/dashboard`}
       className={cn(
         'flex items-center gap-1.5 h-7 px-2 rounded mx-1 text-xs',
         isActive
