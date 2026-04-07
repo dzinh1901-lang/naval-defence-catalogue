@@ -14,7 +14,7 @@ import { VesselViewport } from './VesselViewport';
 import { InspectorPanel } from './InspectorPanel';
 import { AlertsOverlay } from './AlertsOverlay';
 import { HistoryOverlay } from './HistoryOverlay';
-import { AlertTriangle, Clock } from 'lucide-react';
+import { AlertTriangle, Clock, PanelLeftOpen, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type WorkspaceSection =
@@ -35,37 +35,20 @@ interface WorkspaceShellProps {
   initialViewConfig: WorkspaceViewConfig | null;
 }
 
-export function WorkspaceShell({
-  twinId,
-  summary,
-  hotspots,
-  alerts,
-  history,
-  initialViewConfig,
-}: WorkspaceShellProps) {
-  // ── Navigation state ──────────────────────────────────────────────────────
+export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, initialViewConfig }: WorkspaceShellProps) {
   const [activeSection, setActiveSection] = useState<WorkspaceSection>('overview');
-
-  // ── Hotspot selection ─────────────────────────────────────────────────────
   const [selectedHotspotId, setSelectedHotspotId] = useState<string | null>(null);
   const selectedHotspot = hotspots.find((h) => h.id === selectedHotspotId) ?? null;
-
-  // ── Design studio state (synced to API) ───────────────────────────────────
-  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(
-    initialViewConfig?.selectedMaterialId ?? null,
-  );
-  const [selectedLightingId, setSelectedLightingId] = useState<string | null>(
-    initialViewConfig?.selectedLightingId ?? null,
-  );
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(initialViewConfig?.selectedMaterialId ?? null);
+  const [selectedLightingId, setSelectedLightingId] = useState<string | null>(initialViewConfig?.selectedLightingId ?? null);
   const [camDof, setCamDof] = useState(initialViewConfig?.camDof ?? 3.0);
   const [camFstop, setCamFstop] = useState(initialViewConfig?.camFstop ?? 30.0);
-
-  // ── Overlay visibility ────────────────────────────────────────────────────
   const [alertsOpen, setAlertsOpen] = useState(alerts.some((a) => !a.resolvedAt));
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showInspector, setShowInspector] = useState(false);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
 
-  // ── View-config persistence ───────────────────────────────────────────────
   const persistViewConfig = useCallback(
     async (patch: {
       selectedMaterialId?: string | null;
@@ -76,27 +59,13 @@ export function WorkspaceShell({
       try {
         const response = await fetch(`/api/workspace/${twinId}/view-config`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patch),
         });
-
         if (!response.ok) {
-          const body = await response.text();
-          if (response.status === 401) {
-            setPersistenceError(
-              body.toLowerCase().includes('expired')
-                ? 'Workspace update token expired. Renew the server-side API credentials and retry.'
-                : 'Workspace updates are unauthorized. Check the server-side API auth configuration.',
-            );
-            return;
-          }
-
           setPersistenceError('Workspace updates could not be saved right now.');
           return;
         }
-
         setPersistenceError(null);
       } catch {
         setPersistenceError('Workspace updates could not be saved right now.');
@@ -105,120 +74,59 @@ export function WorkspaceShell({
     [twinId],
   );
 
-  const handleMaterialSelect = useCallback(
-    (id: string) => {
-      setSelectedMaterialId(id);
-      void persistViewConfig({ selectedMaterialId: id });
-    },
-    [persistViewConfig],
-  );
+  const handleMaterialSelect = useCallback((id: string) => {
+    setSelectedMaterialId(id);
+    void persistViewConfig({ selectedMaterialId: id });
+  }, [persistViewConfig]);
+  const handleLightingSelect = useCallback((id: string) => {
+    setSelectedLightingId(id);
+    void persistViewConfig({ selectedLightingId: id });
+  }, [persistViewConfig]);
+  const handleDofChange = useCallback((v: number) => {
+    setCamDof(v);
+    void persistViewConfig({ camDof: v });
+  }, [persistViewConfig]);
+  const handleFstopChange = useCallback((v: number) => {
+    setCamFstop(v);
+    void persistViewConfig({ camFstop: v });
+  }, [persistViewConfig]);
 
-  const handleLightingSelect = useCallback(
-    (id: string) => {
-      setSelectedLightingId(id);
-      void persistViewConfig({ selectedLightingId: id });
-    },
-    [persistViewConfig],
-  );
-
-  const handleDofChange = useCallback(
-    (v: number) => {
-      setCamDof(v);
-      void persistViewConfig({ camDof: v });
-    },
-    [persistViewConfig],
-  );
-
-  const handleFstopChange = useCallback(
-    (v: number) => {
-      setCamFstop(v);
-      void persistViewConfig({ camFstop: v });
-    },
-    [persistViewConfig],
-  );
-
-  // ── Active-alert count ────────────────────────────────────────────────────
   const activeAlertCount = alerts.filter((a) => !a.resolvedAt).length;
 
   return (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-surface-0">
-      {/* ── Top status bar ─────────────────────────────────────────────── */}
-      <WorkspaceTopBar
-        twinName={summary.twin.name}
-        projectName={summary.project?.name ?? 'Project'}
-      />
+      <WorkspaceTopBar twinName={summary.twin.name} projectName={summary.project?.name ?? 'Project'} />
+      <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-b border-border-subtle bg-surface-1">
+        <button onClick={() => setShowSidebar(true)} className="px-2.5 py-1.5 rounded border border-border-subtle text-text-secondary text-xs flex items-center gap-1.5"><PanelLeftOpen size={13}/>Nav</button>
+        <button onClick={() => setShowInspector(true)} className="px-2.5 py-1.5 rounded border border-border-subtle text-text-secondary text-xs flex items-center gap-1.5"><SlidersHorizontal size={13}/>Inspector</button>
+      </div>
 
-      {/* ── Main row ───────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
-        <WorkspaceSidebar
-          twinName={summary.twin.name}
-          projectName={summary.project?.name ?? 'Project'}
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
+        <WorkspaceSidebar twinName={summary.twin.name} projectName={summary.project?.name ?? 'Project'} activeSection={activeSection} onSectionChange={setActiveSection} className="hidden lg:flex" />
 
-        {/* Center: vessel viewport */}
         <main className="flex-1 relative overflow-hidden bg-surface-0">
-          {/* Section content overlay (non-viewport sections) */}
           {activeSection !== 'overview' && activeSection !== 'vessel-layout' && activeSection !== 'design-studio' ? (
-            <SectionPlaceholder section={activeSection} />
+            <SectionPlaceholder section={activeSection} summary={summary} />
           ) : (
-            <VesselViewport
-              hotspots={hotspots}
-              selectedHotspotId={selectedHotspotId}
-              onHotspotSelect={(id) => {
-                setSelectedHotspotId((prev) => (prev === id ? null : id));
-              }}
-              className="absolute inset-0"
-            />
+            <VesselViewport hotspots={hotspots} selectedHotspotId={selectedHotspotId} onHotspotSelect={(id) => setSelectedHotspotId((prev) => (prev === id ? null : id))} className="absolute inset-0" />
           )}
 
-          {/* Bottom overlay toggle buttons */}
           <div className="absolute bottom-4 left-4 flex gap-2 z-10">
-            {persistenceError && (
-              <div className="max-w-sm rounded border border-naval-red/30 bg-naval-red/10 px-3 py-2 text-2xs font-medium text-naval-red">
-                {persistenceError}
-              </div>
-            )}
+            {persistenceError && <div className="max-w-sm rounded border border-naval-red/30 bg-naval-red/10 px-3 py-2 text-2xs font-medium text-naval-red">{persistenceError}</div>}
             {activeAlertCount > 0 && (
-              <button
-                onClick={() => setAlertsOpen((v) => !v)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-2xs font-semibold transition-all',
-                  alertsOpen
-                    ? 'bg-naval-red/20 border-naval-red/40 text-naval-red'
-                    : 'bg-surface-1/80 border-border text-text-muted hover:text-naval-red hover:border-naval-red/40 backdrop-blur-sm',
-                )}
-              >
-                <AlertTriangle size={11} />
-                {activeAlertCount} Alert{activeAlertCount !== 1 ? 's' : ''}
+              <button onClick={() => setAlertsOpen((v) => !v)} className={cn('flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-2xs font-semibold transition-all', alertsOpen ? 'bg-naval-red/20 border-naval-red/40 text-naval-red' : 'bg-surface-1/80 border-border text-text-muted hover:text-naval-red hover:border-naval-red/40 backdrop-blur-sm')}>
+                <AlertTriangle size={11} />{activeAlertCount} Alert{activeAlertCount !== 1 ? 's' : ''}
               </button>
             )}
-            <button
-              onClick={() => setHistoryOpen((v) => !v)}
-              className={cn(
-                'flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-2xs font-semibold transition-all',
-                historyOpen
-                  ? 'bg-naval-cyan/10 border-naval-cyan/30 text-naval-cyan'
-                  : 'bg-surface-1/80 border-border text-text-muted hover:text-naval-cyan hover:border-naval-cyan/30 backdrop-blur-sm',
-              )}
-            >
-              <Clock size={11} />
-              History
+            <button onClick={() => setHistoryOpen((v) => !v)} className={cn('flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-2xs font-semibold transition-all', historyOpen ? 'bg-naval-cyan/10 border-naval-cyan/30 text-naval-cyan' : 'bg-surface-1/80 border-border text-text-muted hover:text-naval-cyan hover:border-naval-cyan/30 backdrop-blur-sm')}>
+              <Clock size={11} />History
             </button>
           </div>
 
-          {/* Overlays */}
-          {alertsOpen && activeAlertCount > 0 && (
-            <AlertsOverlay alerts={alerts} onClose={() => setAlertsOpen(false)} />
-          )}
-          {historyOpen && (
-            <HistoryOverlay entries={history} onClose={() => setHistoryOpen(false)} />
-          )}
+          {alertsOpen && activeAlertCount > 0 && <AlertsOverlay alerts={alerts} onClose={() => setAlertsOpen(false)} />}
+          {historyOpen && <HistoryOverlay entries={history} onClose={() => setHistoryOpen(false)} />}
         </main>
 
-        {/* Right inspector */}
         <InspectorPanel
           viewConfig={initialViewConfig}
           materialPresets={summary.materialPresets}
@@ -232,13 +140,53 @@ export function WorkspaceShell({
           onLightingSelect={handleLightingSelect}
           onDofChange={handleDofChange}
           onFstopChange={handleFstopChange}
+          className="hidden lg:flex"
         />
       </div>
+
+      {showSidebar && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSidebar(false)} />
+          <WorkspaceSidebar twinName={summary.twin.name} projectName={summary.project?.name ?? 'Project'} activeSection={activeSection} onSectionChange={setActiveSection} onClose={() => setShowSidebar(false)} className="absolute left-0 top-0 h-full" />
+        </div>
+      )}
+
+      {showInspector && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowInspector(false)} />
+          <InspectorPanel
+            viewConfig={initialViewConfig}
+            materialPresets={summary.materialPresets}
+            lightingPresets={summary.lightingPresets}
+            selectedHotspot={selectedHotspot}
+            selectedMaterialId={selectedMaterialId}
+            selectedLightingId={selectedLightingId}
+            camDof={camDof}
+            camFstop={camFstop}
+            onMaterialSelect={handleMaterialSelect}
+            onLightingSelect={handleLightingSelect}
+            onDofChange={handleDofChange}
+            onFstopChange={handleFstopChange}
+            onClose={() => setShowInspector(false)}
+            className="absolute right-0 top-0 h-full"
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-function SectionPlaceholder({ section }: { section: WorkspaceSection }) {
+function SectionPlaceholder({ section, summary }: { section: WorkspaceSection; summary: WorkspaceSummary }) {
+  if (section === 'performance') {
+    return <MetricsPanel title="Performance Tests" lines={[`Total simulations: ${summary.performanceSummary.totalSimulations}`, `Completed runs: ${summary.performanceSummary.completedRuns}`, `Running runs: ${summary.performanceSummary.runningRuns}`, `Failed runs: ${summary.performanceSummary.failedRuns}`, `Pass rate: ${summary.performanceSummary.passRate}%`]} />;
+  }
+  if (section === 'rules') {
+    return <MetricsPanel title="Rules Check" lines={[`Compliance score: ${summary.rulesSummary.complianceScore}%`, `Approved requirements: ${summary.rulesSummary.approvedRequirements}`, `In-review requirements: ${summary.rulesSummary.reviewRequirements}`, `Rejected requirements: ${summary.rulesSummary.rejectedRequirements}`]} />;
+  }
+  if (section === 'team') {
+    return <MetricsPanel title="Team Hub" lines={[`Total members: ${summary.teamSummary.totalMembers}`, `Admins/Members/Viewers: ${summary.teamSummary.adminMembers}/${summary.teamSummary.memberMembers}/${summary.teamSummary.viewerMembers}`, `Activity (24h): ${summary.teamSummary.recentActivityCount}`]} />;
+  }
+
   const labels: Record<WorkspaceSection, string> = {
     overview: 'Overview',
     'vessel-layout': 'Vessel Layout',
@@ -248,13 +196,25 @@ function SectionPlaceholder({ section }: { section: WorkspaceSection }) {
     rules: 'Rules Check',
     team: 'Team Hub',
   };
-
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-text-muted">
       <div className="h-px w-24 bg-border" />
       <p className="text-sm font-medium text-text-secondary">{labels[section]}</p>
       <p className="text-2xs text-text-dim">This section is under development</p>
       <div className="h-px w-24 bg-border" />
+    </div>
+  );
+}
+
+function MetricsPanel({ title, lines }: { title: string; lines: string[] }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center p-6">
+      <div className="w-full max-w-lg rounded-xl border border-border-subtle bg-surface-1/80 backdrop-blur-md p-5 space-y-2">
+        <h3 className="text-sm font-semibold tracking-wide text-text-primary uppercase">{title}</h3>
+        {lines.map((line) => (
+          <p key={line} className="text-xs text-text-secondary">{line}</p>
+        ))}
+      </div>
     </div>
   );
 }

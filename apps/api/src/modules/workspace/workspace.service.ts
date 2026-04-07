@@ -29,6 +29,12 @@ export class WorkspaceService {
         this.prisma.lightingPreset.findMany({ orderBy: { name: 'asc' } }),
       ]);
 
+    const [performanceSummary, rulesSummary, teamSummary] = await Promise.all([
+      this.getPerformanceSummary(twinId),
+      this.getRulesSummary(twinId),
+      this.getTeamSummary(twin?.projectId ?? ''),
+    ]);
+
     return {
       twin,
       project: twin?.project ?? null,
@@ -38,6 +44,106 @@ export class WorkspaceService {
       activityCount,
       materialPresets,
       lightingPresets,
+      performanceSummary,
+      rulesSummary,
+      teamSummary,
+    };
+  }
+
+  /** GET /workspace/:twinId/performance */
+  async getPerformanceSummary(twinId: string) {
+    const [totalSimulations, completedRuns, runningRuns, failedRuns] = await Promise.all([
+      this.prisma.simulation.count({ where: { twinId } }),
+      this.prisma.simulationRun.count({
+        where: { simulation: { twinId }, status: 'COMPLETED' },
+      }),
+      this.prisma.simulationRun.count({
+        where: { simulation: { twinId }, status: 'RUNNING' },
+      }),
+      this.prisma.simulationRun.count({
+        where: { simulation: { twinId }, status: 'FAILED' },
+      }),
+    ]);
+
+    const assessedRuns = completedRuns + failedRuns;
+    const passRate = assessedRuns === 0 ? 0 : Number(((completedRuns / assessedRuns) * 100).toFixed(1));
+
+    return {
+      totalSimulations,
+      completedRuns,
+      runningRuns,
+      failedRuns,
+      passRate,
+    };
+  }
+
+  /** GET /workspace/:twinId/rules */
+  async getRulesSummary(twinId: string) {
+    const twin = await this.prisma.digitalTwin.findUnique({
+      where: { id: twinId },
+      select: { projectId: true },
+    });
+
+    if (!twin) {
+      return {
+        approvedRequirements: 0,
+        reviewRequirements: 0,
+        rejectedRequirements: 0,
+        complianceScore: 0,
+      };
+    }
+
+    const [approvedRequirements, reviewRequirements, rejectedRequirements] = await Promise.all([
+      this.prisma.requirement.count({ where: { projectId: twin.projectId, status: 'APPROVED' } }),
+      this.prisma.requirement.count({ where: { projectId: twin.projectId, status: 'REVIEW' } }),
+      this.prisma.requirement.count({ where: { projectId: twin.projectId, status: 'REJECTED' } }),
+    ]);
+
+    const denominator = approvedRequirements + reviewRequirements + rejectedRequirements;
+    const complianceScore = denominator === 0 ? 0 : Number(((approvedRequirements / denominator) * 100).toFixed(1));
+
+    return {
+      approvedRequirements,
+      reviewRequirements,
+      rejectedRequirements,
+      complianceScore,
+    };
+  }
+
+  /** GET /workspace/:twinId/team */
+  async getTeamSummary(projectId: string) {
+    if (!projectId) {
+      return {
+        totalMembers: 0,
+        adminMembers: 0,
+        memberMembers: 0,
+        viewerMembers: 0,
+        recentActivityCount: 0,
+      };
+    }
+
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [totalMembers, adminMembers, memberMembers, viewerMembers, recentActivityCount] =
+      await Promise.all([
+        this.prisma.projectMember.count({ where: { projectId } }),
+        this.prisma.projectMember.count({ where: { projectId, role: 'ADMIN' } }),
+        this.prisma.projectMember.count({ where: { projectId, role: 'MEMBER' } }),
+        this.prisma.projectMember.count({ where: { projectId, role: 'VIEWER' } }),
+        this.prisma.twinActivityLog.count({
+          where: {
+            twin: { projectId },
+            createdAt: { gte: dayAgo },
+          },
+        }),
+      ]);
+
+    return {
+      totalMembers,
+      adminMembers,
+      memberMembers,
+      viewerMembers,
+      recentActivityCount,
     };
   }
 

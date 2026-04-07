@@ -19,6 +19,38 @@ export class WorkspaceController {
     return summary;
   }
 
+
+  /**
+   * GET /api/v1/workspace/:twinId/performance
+   * Performance/simulation overview.
+   */
+  @Get(':twinId/performance')
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
+  getPerformanceSummary(@Param('twinId') twinId: string) {
+    return this.service.getPerformanceSummary(twinId);
+  }
+
+  /**
+   * GET /api/v1/workspace/:twinId/rules
+   * Requirement compliance / rules summary.
+   */
+  @Get(':twinId/rules')
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
+  getRulesSummary(@Param('twinId') twinId: string) {
+    return this.service.getRulesSummary(twinId);
+  }
+
+  /**
+   * GET /api/v1/workspace/:twinId/team
+   * Team membership and recent activity summary.
+   */
+  @Get(':twinId/team')
+  @Roles('VIEWER', 'MEMBER', 'ADMIN')
+  async getTeamSummary(@Param('twinId') twinId: string) {
+    const summary = await this.service.getSummary(twinId);
+    return summary.teamSummary;
+  }
+
   /**
    * GET /api/v1/workspace/:twinId/hotspots
    * Viewport hotspot definitions for the vessel.

@@ -364,6 +364,29 @@ export interface TwinActivityLog {
   actor?: Pick<User, 'id' | 'name' | 'email'> | null;
 }
 
+
+export interface WorkspacePerformanceSummary {
+  totalSimulations: number;
+  completedRuns: number;
+  runningRuns: number;
+  failedRuns: number;
+  passRate: number;
+}
+
+export interface WorkspaceRulesSummary {
+  approvedRequirements: number;
+  reviewRequirements: number;
+  rejectedRequirements: number;
+  complianceScore: number;
+}
+
+export interface WorkspaceTeamSummary {
+  totalMembers: number;
+  adminMembers: number;
+  memberMembers: number;
+  viewerMembers: number;
+  recentActivityCount: number;
+}
 export interface WorkspaceSummary {
   twin: DigitalTwin;
   project: Project;
@@ -373,6 +396,9 @@ export interface WorkspaceSummary {
   activityCount: number;
   materialPresets: MaterialPreset[];
   lightingPresets: LightingPreset[];
+  performanceSummary: WorkspacePerformanceSummary;
+  rulesSummary: WorkspaceRulesSummary;
+  teamSummary: WorkspaceTeamSummary;
 }
 
 export interface UpdateViewConfigDto {
