@@ -39,10 +39,8 @@ export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, ini
   const [activeSection, setActiveSection] = useState<WorkspaceSection>('overview');
   const [selectedHotspotId, setSelectedHotspotId] = useState<string | null>(null);
   const selectedHotspot = hotspots.find((h) => h.id === selectedHotspotId) ?? null;
-  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(initialViewConfig?.selectedMaterialId ?? null);
-  const [selectedLightingId, setSelectedLightingId] = useState<string | null>(initialViewConfig?.selectedLightingId ?? null);
-  const [camDof, setCamDof] = useState(initialViewConfig?.camDof ?? 3.0);
-  const [camFstop, setCamFstop] = useState(initialViewConfig?.camFstop ?? 30.0);
+  const [selectedMaterialPresetId, setSelectedMaterialId] = useState<string | null>(initialViewConfig?.selectedMaterialPresetId ?? null);
+  const [selectedLightingPresetId, setSelectedLightingId] = useState<string | null>(initialViewConfig?.selectedLightingPresetId ?? null);
   const [alertsOpen, setAlertsOpen] = useState(alerts.some((a) => !a.resolvedAt));
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -51,10 +49,8 @@ export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, ini
 
   const persistViewConfig = useCallback(
     async (patch: {
-      selectedMaterialId?: string | null;
-      selectedLightingId?: string | null;
-      camDof?: number;
-      camFstop?: number;
+      selectedMaterialPresetId?: string | null;
+      selectedLightingPresetId?: string | null;
     }) => {
       try {
         const response = await fetch(`/api/workspace/${twinId}/view-config`, {
@@ -76,20 +72,18 @@ export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, ini
 
   const handleMaterialSelect = useCallback((id: string) => {
     setSelectedMaterialId(id);
-    void persistViewConfig({ selectedMaterialId: id });
+    void persistViewConfig({ selectedMaterialPresetId: id });
   }, [persistViewConfig]);
   const handleLightingSelect = useCallback((id: string) => {
     setSelectedLightingId(id);
-    void persistViewConfig({ selectedLightingId: id });
+    void persistViewConfig({ selectedLightingPresetId: id });
   }, [persistViewConfig]);
-  const handleDofChange = useCallback((v: number) => {
-    setCamDof(v);
-    void persistViewConfig({ camDof: v });
-  }, [persistViewConfig]);
-  const handleFstopChange = useCallback((v: number) => {
-    setCamFstop(v);
-    void persistViewConfig({ camFstop: v });
-  }, [persistViewConfig]);
+  const handleDofChange = useCallback((_v: number) => {
+    // Camera DOF not supported in current domain model
+  }, []);
+  const handleFstopChange = useCallback((_v: number) => {
+    // Camera F-stop not supported in current domain model
+  }, []);
 
   const activeAlertCount = alerts.filter((a) => !a.resolvedAt).length;
 
@@ -132,10 +126,10 @@ export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, ini
           materialPresets={summary.materialPresets}
           lightingPresets={summary.lightingPresets}
           selectedHotspot={selectedHotspot}
-          selectedMaterialId={selectedMaterialId}
-          selectedLightingId={selectedLightingId}
-          camDof={camDof}
-          camFstop={camFstop}
+          selectedMaterialPresetId={selectedMaterialPresetId}
+          selectedLightingPresetId={selectedLightingPresetId}
+          camDof={3.0}
+          camFstop={30.0}
           onMaterialSelect={handleMaterialSelect}
           onLightingSelect={handleLightingSelect}
           onDofChange={handleDofChange}
@@ -159,10 +153,10 @@ export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, ini
             materialPresets={summary.materialPresets}
             lightingPresets={summary.lightingPresets}
             selectedHotspot={selectedHotspot}
-            selectedMaterialId={selectedMaterialId}
-            selectedLightingId={selectedLightingId}
-            camDof={camDof}
-            camFstop={camFstop}
+            selectedMaterialPresetId={selectedMaterialPresetId}
+            selectedLightingPresetId={selectedLightingPresetId}
+            camDof={3.0}
+            camFstop={30.0}
             onMaterialSelect={handleMaterialSelect}
             onLightingSelect={handleLightingSelect}
             onDofChange={handleDofChange}
@@ -178,13 +172,13 @@ export function WorkspaceShell({ twinId, summary, hotspots, alerts, history, ini
 
 function SectionPlaceholder({ section, summary }: { section: WorkspaceSection; summary: WorkspaceSummary }) {
   if (section === 'performance') {
-    return <MetricsPanel title="Performance Tests" lines={[`Total simulations: ${summary.performanceSummary.totalSimulations}`, `Completed runs: ${summary.performanceSummary.completedRuns}`, `Running runs: ${summary.performanceSummary.runningRuns}`, `Failed runs: ${summary.performanceSummary.failedRuns}`, `Pass rate: ${summary.performanceSummary.passRate}%`]} />;
+    return <MetricsPanel title="Performance Tests" lines={[`Readiness score: ${summary.performance.readinessScore}%`, `Latest run: ${summary.performance.latestRunLabel}`, `Max speed: ${summary.performance.maxSpeedKnots} knots`, `Endurance: ${summary.performance.enduranceNm} nm`]} />;
   }
   if (section === 'rules') {
-    return <MetricsPanel title="Rules Check" lines={[`Compliance score: ${summary.rulesSummary.complianceScore}%`, `Approved requirements: ${summary.rulesSummary.approvedRequirements}`, `In-review requirements: ${summary.rulesSummary.reviewRequirements}`, `Rejected requirements: ${summary.rulesSummary.rejectedRequirements}`]} />;
+    return <MetricsPanel title="Rules Check" lines={[`Compliance score: ${summary.rules.complianceScore}%`, `Approved requirements: ${summary.rules.approvedRequirements}`, `In-review requirements: ${summary.rules.reviewRequirements}`, `Draft requirements: ${summary.rules.draftRequirements}`]} />;
   }
   if (section === 'team') {
-    return <MetricsPanel title="Team Hub" lines={[`Total members: ${summary.teamSummary.totalMembers}`, `Admins/Members/Viewers: ${summary.teamSummary.adminMembers}/${summary.teamSummary.memberMembers}/${summary.teamSummary.viewerMembers}`, `Activity (24h): ${summary.teamSummary.recentActivityCount}`]} />;
+    return <MetricsPanel title="Team Hub" lines={[`Active members: ${summary.team.activeMembers}`, `Online members: ${summary.team.onlineMembers}`, `Upcoming review: ${summary.team.upcomingReview}`]} />;
   }
 
   const labels: Record<WorkspaceSection, string> = {

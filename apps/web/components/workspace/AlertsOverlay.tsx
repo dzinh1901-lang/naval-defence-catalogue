@@ -17,17 +17,23 @@ const severityConfig: Record<AlertSeverity, { border: string; bg: string; text: 
     text: 'text-naval-red',
     icon: 'text-naval-red',
   },
-  [AlertSeverity.WARNING]: {
+  [AlertSeverity.HIGH]: {
     border: 'border-naval-amber/40',
     bg: 'bg-naval-amber/10',
     text: 'text-naval-amber',
     icon: 'text-naval-amber',
   },
-  [AlertSeverity.INFO]: {
+  [AlertSeverity.MEDIUM]: {
     border: 'border-naval-cyan/30',
     bg: 'bg-naval-cyan/10',
     text: 'text-naval-cyan',
     icon: 'text-naval-cyan',
+  },
+  [AlertSeverity.LOW]: {
+    border: 'border-border/40',
+    bg: 'bg-surface-2/10',
+    text: 'text-text-muted',
+    icon: 'text-text-muted',
   },
 };
 
@@ -66,7 +72,7 @@ export function AlertsOverlay({ alerts, onClose }: AlertsOverlayProps) {
             </div>
           ) : (
             active.slice(0, 5).map((alert) => {
-              const cfg = severityConfig[alert.severity] ?? severityConfig[AlertSeverity.INFO];
+              const cfg = severityConfig[alert.severity] ?? severityConfig[AlertSeverity.MEDIUM];
               return (
                 <div
                   key={alert.id}

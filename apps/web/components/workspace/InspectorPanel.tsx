@@ -13,8 +13,8 @@ interface InspectorPanelProps {
   materialPresets: MaterialPreset[];
   lightingPresets: LightingPreset[];
   selectedHotspot: ViewportHotspot | null;
-  selectedMaterialId: string | null;
-  selectedLightingId: string | null;
+  selectedMaterialPresetId: string | null;
+  selectedLightingPresetId: string | null;
   camDof: number;
   camFstop: number;
   onMaterialSelect: (id: string) => void;
@@ -29,8 +29,8 @@ export function InspectorPanel({
   materialPresets,
   lightingPresets,
   selectedHotspot,
-  selectedMaterialId,
-  selectedLightingId,
+  selectedMaterialPresetId,
+  selectedLightingPresetId,
   camDof,
   camFstop,
   onMaterialSelect,
@@ -59,13 +59,13 @@ export function InspectorPanel({
       {selectedHotspot && (
         <div className="mx-2 mt-2 rounded border border-naval-cyan/20 bg-naval-cyan/5 px-2.5 py-2 shrink-0">
           <div className="text-2xs font-mono text-naval-cyan mb-0.5">{selectedHotspot.subsystem?.identifier ?? 'HOTSPOT'}</div>
-          <div className="text-2xs font-semibold text-text-primary">{selectedHotspot.label}</div>
+          <div className="text-2xs font-semibold text-text-primary">{selectedHotspot.title}</div>
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto">
-        <MaterialsSection presets={materialPresets} selectedId={selectedMaterialId} onSelect={onMaterialSelect} />
-        <LightingSection presets={lightingPresets} selectedId={selectedLightingId} onSelect={onLightingSelect} />
+        <MaterialsSection presets={materialPresets} selectedId={selectedMaterialPresetId} onSelect={onMaterialSelect} />
+        <LightingSection presets={lightingPresets} selectedId={selectedLightingPresetId} onSelect={onLightingSelect} />
         <CameraSection dof={camDof} fstop={camFstop} onDofChange={onDofChange} onFstopChange={onFstopChange} />
         <KeyframeSection />
       </div>

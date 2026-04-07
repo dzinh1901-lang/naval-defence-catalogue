@@ -37,8 +37,8 @@ function HotspotMarker({ hotspot, selected, onSelect }: HotspotMarkerProps) {
     <div
       className="absolute pointer-events-auto"
       style={{
-        left: `${hotspot.posX}%`,
-        top: `${hotspot.posY}%`,
+        left: `${hotspot.anchorX}%`,
+        top: `${hotspot.anchorY}%`,
         transform: 'translate(-50%, -50%)',
       }}
     >
@@ -65,7 +65,7 @@ function HotspotMarker({ hotspot, selected, onSelect }: HotspotMarkerProps) {
                 : 'bg-surface-1/90 text-naval-cyan border-naval-cyan/40 backdrop-blur-sm',
             )}
           >
-            {hotspot.label}
+            {hotspot.title}
           </div>
           {/* Vertical line */}
           <div
