@@ -356,6 +356,7 @@ export interface AlertEvent extends BaseEntity {
   message: string;
   source: string;
   acknowledged: boolean;
+  resolvedAt?: string | null;
   raisedAt: string;
   subsystem?: Subsystem | null;
 }
@@ -471,6 +472,9 @@ export interface WorkspaceSummary {
   performance: WorkspacePerformanceSummary;
   rules: WorkspaceRulesSummary;
   team: WorkspaceTeamSummary;
+  viewConfig: WorkspaceViewConfig | null;
+  materialPresets: MaterialPreset[];
+  lightingPresets: LightingPreset[];
 }
 
 export interface WorkspaceViewConfigPayload {
@@ -582,109 +586,4 @@ export interface PaginatedList<T> {
   page: number;
   perPage: number;
   pageCount: number;
-}
-
-// ── Workspace ─────────────────────────────────────────────────────────────────
-
-export enum AlertSeverity {
-  INFO = 'INFO',
-  WARNING = 'WARNING',
-  CRITICAL = 'CRITICAL',
-}
-
-export interface MaterialPreset extends BaseEntity {
-  name: string;
-  description?: string | null;
-  thumbnailUrl?: string | null;
-  colorHex?: string | null;
-}
-
-export interface LightingPreset extends BaseEntity {
-  name: string;
-  description?: string | null;
-  thumbnailUrl?: string | null;
-  intensity: number;
-}
-
-export interface WorkspaceViewConfig extends BaseEntity {
-  twinId: string;
-  selectedMaterialId?: string | null;
-  selectedLightingId?: string | null;
-  camDof: number;
-  camFstop: number;
-  selectedMaterial?: MaterialPreset | null;
-  selectedLighting?: LightingPreset | null;
-}
-
-export interface ViewportHotspot extends BaseEntity {
-  twinId: string;
-  label: string;
-  description?: string | null;
-  subsystemId?: string | null;
-  posX: number;
-  posY: number;
-  subsystem?: Pick<Subsystem, 'id' | 'name' | 'identifier' | 'status'> | null;
-}
-
-export interface AlertEvent extends BaseEntity {
-  twinId: string;
-  title: string;
-  message?: string | null;
-  severity: AlertSeverity;
-  resolvedAt?: string | null;
-}
-
-export interface TwinActivityLog {
-  id: string;
-  twinId: string;
-  actorId?: string | null;
-  action: string;
-  detail?: string | null;
-  version?: string | null;
-  createdAt: string;
-  actor?: Pick<User, 'id' | 'name' | 'email'> | null;
-}
-
-
-export interface WorkspacePerformanceSummary {
-  totalSimulations: number;
-  completedRuns: number;
-  runningRuns: number;
-  failedRuns: number;
-  passRate: number;
-}
-
-export interface WorkspaceRulesSummary {
-  approvedRequirements: number;
-  reviewRequirements: number;
-  rejectedRequirements: number;
-  complianceScore: number;
-}
-
-export interface WorkspaceTeamSummary {
-  totalMembers: number;
-  adminMembers: number;
-  memberMembers: number;
-  viewerMembers: number;
-  recentActivityCount: number;
-}
-export interface WorkspaceSummary {
-  twin: DigitalTwin;
-  project: Project;
-  viewConfig: WorkspaceViewConfig | null;
-  alertCount: number;
-  hotspotCount: number;
-  activityCount: number;
-  materialPresets: MaterialPreset[];
-  lightingPresets: LightingPreset[];
-  performanceSummary: WorkspacePerformanceSummary;
-  rulesSummary: WorkspaceRulesSummary;
-  teamSummary: WorkspaceTeamSummary;
-}
-
-export interface UpdateViewConfigDto {
-  selectedMaterialId?: string | null;
-  selectedLightingId?: string | null;
-  camDof?: number;
-  camFstop?: number;
 }

@@ -523,6 +523,7 @@ model AlertEvent {
   message      String
   source       String
   acknowledged Boolean       @default(false)
+  resolvedAt   DateTime?
   raisedAt     DateTime      @default(now())
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

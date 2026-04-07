@@ -40,15 +40,13 @@ export function HistoryOverlay({ entries, onClose }: HistoryOverlayProps) {
                 <span className="h-1.5 w-1.5 rounded-full bg-naval-cyan shrink-0 mt-1.5" />
                 <div className="min-w-0 flex-1">
                   <div className="text-2xs text-text-secondary leading-relaxed">
-                    {entry.version && (
-                      <span className="font-mono text-naval-cyan mr-1">{entry.version}:</span>
-                    )}
-                    {entry.action}
+                    <span className="font-mono text-naval-cyan mr-1">{entry.eventType}:</span>
+                    {entry.summary}
                     {entry.detail && (
                       <span className="text-text-muted"> — {entry.detail}</span>
                     )}
-                    {entry.actor && (
-                      <span className="text-text-dim ml-1">· {(entry.actor.name.split(' ').pop() ?? entry.actor.name) || entry.actor.name}</span>
+                    {entry.actorName && (
+                      <span className="text-text-dim ml-1">· {entry.actorName}</span>
                     )}
                   </div>
                 </div>

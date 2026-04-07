@@ -32,10 +32,10 @@ export function MaterialsSection({ presets, selectedId, onSelect }: MaterialsSec
             {/* Swatch */}
             <div
               className="w-full aspect-square rounded overflow-hidden"
-              style={{ background: preset.colorHex ?? undefined }}
+              style={{ background: preset.hullColor ?? undefined }}
             >
-              {preset.colorHex ? (
-                <div className="w-full h-full" style={{ backgroundColor: preset.colorHex }} />
+              {preset.hullColor ? (
+                <div className="w-full h-full" style={{ backgroundColor: preset.hullColor }} />
               ) : (
                 <div
                   className={cn(

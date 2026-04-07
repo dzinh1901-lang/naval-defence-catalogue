@@ -104,6 +104,14 @@ export class ApiClientError extends Error {
     super(`API ${status} at ${path}: ${body}`);
     this.name = 'ApiClientError';
   }
+
+  get isUnauthorized(): boolean {
+    return this.status === 401;
+  }
+
+  get isExpiredToken(): boolean {
+    return this.isUnauthorized && this.body.toLowerCase().includes('expired');
+  }
 }
 
 // ── Projects ─────────────────────────────────────────────────────────────────
